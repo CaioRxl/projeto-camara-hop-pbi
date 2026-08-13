@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow>
+  <name>wkf_refined_camara</name>
+  <name_sync_with_filename>Y</name_sync_with_filename>
+  <description>Carga da camada refined a partir do schema raw.</description>
+  <extended_description>Monta o modelo estrela a partir dos dados ja coletados na camada raw.
+Nao acessa a internet: a origem e o proprio banco.
+
+  1. dim_uf         unidades federativas  -> refined.dim_uf
+  2. fato_cotas     teto da cota por mes  -> refined.fato_cotas
+  3. dim_deputado   deputados             -> refined.dim_deputado
+  4. fato_despesas  despesas              -> refined.fato_despesas
+  5. fato_ocupacao  ocupacoes             -> refined.fato_ocupacao
+
+A ordem segue a regra classica de modelo dimensional: dimensoes antes das
+fatos. Aqui isso e convencao, nao imposicao do banco, porque nao ha chave
+estrangeira declarada (os pipelines gravam com truncate, e o Postgres recusa
+truncate em tabela referenciada por FK). Ainda assim vale manter a ordem: se
+uma fato rodar antes, ela pode referenciar deputado ou UF que a dimensao
+ainda nao tem.
+
+O fato_cotas fica logo depois do dim_uf porque os dois giram em torno de UF:
+nenhum dos dois depende de deputado. E o unico fato do modelo sem grao de
+deputado — registra o teto por estado e mes, nao um gasto individual.
+
+Sao tres fatos com naturezas diferentes. A de despesas tem medidas em
+dinheiro e concentra o volume da camada. A de ocupacoes nao tem medida
+nenhuma: registra apenas que o vinculo profissional existiu. A de cotas
+tambem tem medida em dinheiro, mas e o teto permitido, nao o gasto.
+
+Este workflow depende da camada raw estar carregada. Rodando isolado, ele
+processa o que estiver no schema raw naquele momento. Para a carga completa,
+use o wkf_projeto_camara.
+
+Antes da primeira execucao, rode 02. refined/ddl.sql no banco.</extended_description>
+  <workflow_version/>
+  <created_user>-</created_user>
+  <created_date>2026/08/07 18:27:56.594</created_date>
+  <modified_user>-</modified_user>
+  <modified_date>2026/08/07 19:00:00.000</modified_date>
+  <parameters>
+    </parameters>
+  <actions>
+    <action>
+      <name>Start</name>
+      <description>Ponto de partida. Toda execucao comeca por aqui.</description>
+      <type>SPECIAL</type>
+      <attributes/>
+      <DayOfMonth>1</DayOfMonth>
+      <hour>12</hour>
+      <intervalMinutes>60</intervalMinutes>
+      <intervalSeconds>0</intervalSeconds>
+      <minutes>0</minutes>
+      <repeat>N</repeat>
+      <schedulerType>0</schedulerType>
+      <weekDay>1</weekDay>
+      <parallel>N</parallel>
+      <xloc>96</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>dim_uf.hpl</name>
+      <description>Monta a dimensao de unidade federativa em refined.dim_uf.
+
+Fica com sigla, nome e o link da bandeira. E a sigla que liga esta dimensao ao deputado.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/02. refined/dim_uf.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>256</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>fato_cotas.hpl</name>
+      <description>Monta a fato de teto da cota parlamentar em refined.fato_cotas.
+
+Uma linha por UF e mes de competencia. Converte o mes de competencia de texto para data.
+
+Sem grao de deputado: registra o teto do estado no mes, nao um gasto individual. Fica logo apos o dim_uf porque os dois giram em torno de UF.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/02. refined/fato_cotas.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>416</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>dim_deputado.hpl</name>
+      <description>Monta a dimensao de deputado em refined.dim_deputado.
+
+Traz so os atributos que a analise usa. URIs de API, e-mail e legislatura ficam na raw.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/02. refined/dim_deputado.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>576</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>fato_despesas.hpl</name>
+      <description>Monta a fato de despesas em refined.fato_despesas.
+
+Uma linha por despesa, sem agregacao. Ja formata CNPJ/CPF e deriva o tipo de pessoa, direto no SELECT.
+
+E o unico passo com volume alto da camada; os outros levam segundos.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/02. refined/fato_despesas.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>736</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>fato_ocupacao.hpl</name>
+      <description>Monta a fato de ocupacoes em refined.fato_ocupacao.
+
+Uma linha por ocupacao declarada pelo deputado. Fato sem medidas: registra que o vinculo existiu.
+
+Descarta as linhas de campos nulos que a raw guarda para deputado sem ocupacao registrada.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/02. refined/fato_ocupacao.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>896</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>Success</name>
+      <description>Chegou aqui: as duas dimensoes e as tres fatos estao carregadas.</description>
+      <type>SUCCESS</type>
+      <attributes/>
+      <parallel>N</parallel>
+      <xloc>1056</xloc>
+      <yloc>112</yloc>
+      <attributes_hac/>
+    </action>
+  </actions>
+  <hops>
+    <hop>
+      <from>Start</from>
+      <to>dim_uf.hpl</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+    <hop>
+      <from>fato_despesas.hpl</from>
+      <to>fato_ocupacao.hpl</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>fato_ocupacao.hpl</from>
+      <to>Success</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>dim_uf.hpl</from>
+      <to>fato_cotas.hpl</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>fato_cotas.hpl</from>
+      <to>dim_deputado.hpl</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>dim_deputado.hpl</from>
+      <to>fato_despesas.hpl</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+  </hops>
+  <notepads>
+  </notepads>
+  <attributes/>
+</workflow>

@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>get_ocupacoes</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description>Carrega as ocupacoes profissionais dos deputados em raw.ocupacoes.</description>
+    <extended_description>Para cada deputado, busca o historico de ocupacoes declaradas: cargo,
+entidade, estado e pais da entidade, ano de inicio e ano de fim.
+
+Ao contrario do get_despesas, este endpoint NAO tem paginacao. Uma chamada
+por deputado traz o historico inteiro, entao o fluxo e direto: le a lista de
+deputados, monta o endereco, chama a API, quebra em linhas, grava.
+
+PEGADINHA DA ORIGEM: deputado sem ocupacao registrada nao devolve uma lista
+vazia. Devolve UMA linha com todos os campos nulos. Essas linhas sao gravadas
+aqui de proposito, por fidelidade a origem: elas registram que a API foi
+consultada e nao tinha nada a informar. Quem descarta e a camada refined.
+
+Depende do get_deputados ter rodado antes, pela mesma razao do get_despesas:
+e de raw.deputados que sai a lista de quem consultar.
+
+Carga full. A tabela e truncada antes de gravar.</extended_description>
+    <pipeline_version/>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>-</created_user>
+    <created_date>2026/08/07 20:00:00.000</created_date>
+    <modified_user>-</modified_user>
+    <modified_date>2026/08/07 20:00:00.000</modified_date>
+  </info>
+  <notepads>
+  </notepads>
+  <order>
+    <hop>
+      <from>1. Ler os deputados</from>
+      <to>2. Pegar o endereço base</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>2. Pegar o endereço base</from>
+      <to>3. Montar o endereço</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>3. Montar o endereço</from>
+      <to>4. Buscar as ocupações</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>4. Buscar as ocupações</from>
+      <to>5. Abrir a resposta</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>5. Abrir a resposta</from>
+      <to>6. Separar uma ocupação por linha</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>6. Separar uma ocupação por linha</from>
+      <to>7. Renomear as colunas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>7. Renomear as colunas</from>
+      <to>8. Gravar em raw.ocupacoes</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>1. Ler os deputados</name>
+    <type>TableInput</type>
+    <description>Lê do banco os deputados a consultar.
+
+Mesma lógica do get_despesas: a legislatura sai da própria consulta, via MAX sobre raw.deputados, em vez de vir de variável. Isso mantém o pipeline autocontido e evita que a tela do Hop tente resolver ${...} contra o banco ao desenhar o diagrama.
+
+O get_deputados precisa ter rodado antes, senão isto lê uma lista desatualizada.
+
+Está em modo Copiar porque alimenta a fila principal e o contador de log ao mesmo tempo.</description>
+    <distribute>N</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>supabase</connection>
+    <execute_each_row>N</execute_each_row>
+    <limit>0</limit>
+    <sql>SELECT DISTINCT
+       id_deputado::text AS id_deputado
+FROM   raw.deputados
+WHERE  id_legislatura = (SELECT MAX(id_legislatura) FROM raw.deputados)
+ORDER  BY 1
+</sql>
+    <variables_active>Y</variables_active>
+    <attributes/>
+    <GUI>
+      <xloc>80</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>2. Pegar o endereço base</name>
+    <type>GetVariable</type>
+    <description>Anexa a cada linha o endereço base da API.
+
+A caixa que monta o endereço só trabalha com colunas, não com configuração do projeto. Esta caixa faz a ponte.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <length>-1</length>
+        <name>V_URL_BASE</name>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <type>String</type>
+        <variable>${P_URL_BASE_DADOS_ABERTOS_CAMARA}</variable>
+      </field>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>272</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>3. Montar o endereço</name>
+    <type>Janino</type>
+    <description>Monta a URL de ocupações de cada deputado.
+
+Não há parâmetro de página nem de legislatura: o endpoint devolve o histórico inteiro numa resposta só.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <formula>
+      <field_name>url_ocupacoes</field_name>
+      <formula_string>V_URL_BASE + "/deputados/" + id_deputado + "/ocupacoes"</formula_string>
+      <value_type>String</value_type>
+      <value_length>-1</value_length>
+      <value_precision>-1</value_precision>
+      <replace_field/>
+    </formula>
+    <attributes/>
+    <GUI>
+      <xloc>464</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>4. Buscar as ocupações</name>
+    <type>Rest</type>
+    <description>Uma chamada por deputado. Sem paginação: cada resposta já traz o histórico completo.
+
+Roda com 4 cópias em paralelo. Vale o mesmo limite do get_despesas: não passe de 8, ou a API começa a recusar por excesso de acessos.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>4</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <applicationType>JSON</applicationType>
+    <connectionTimeout>15000</connectionTimeout>
+    <dynamicMethod>N</dynamicMethod>
+    <headers>
+</headers>
+    <ignoreSsl>N</ignoreSsl>
+    <matrixParameters>
+</matrixParameters>
+    <method>GET</method>
+    <parameters>
+</parameters>
+    <preemptive>N</preemptive>
+    <readTimeout>30000</readTimeout>
+    <result>
+      <name>result</name>
+    </result>
+    <trustStorePassword>Encrypted </trustStorePassword>
+    <urlField>url_ocupacoes</urlField>
+    <urlInField>Y</urlInField>
+    <attributes/>
+    <GUI>
+      <xloc>640</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>5. Abrir a resposta</name>
+    <type>JsonInput</type>
+    <description>Isola o nó "dados" da resposta.
+
+Não há bloco de paginação a tratar aqui: a resposta tem só um atalho, apontando para ela mesma.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>dados</name>
+        <path>$.dados</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>result</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>816</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>6. Separar uma ocupação por linha</name>
+    <type>JsonInput</type>
+    <description>Quebra a lista em uma linha por ocupação e já define o tipo de cada coluna.
+
+Um deputado pode ter várias ocupações, uma, ou nenhuma.
+
+"Default path leaf to null" precisa ficar LIGADO, pelo mesmo motivo do get_despesas: vários campos vêm nulos com frequência (ano de fim em vínculo ainda ativo, por exemplo). Com a opção desligada, as colunas encurtam e passam a ficar desalinhadas entre si, colando o valor de uma linha em outra sem gerar erro.
+
+Deputado sem ocupação devolve uma linha com todos os campos nulos, e ela chega até aqui. É intencional: quem filtra é a camada refined.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>titulo</name>
+        <path>$.*.titulo</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>entidade</name>
+        <path>$.*.entidade</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>entidadeUF</name>
+        <path>$.*.entidadeUF</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>entidadePais</name>
+        <path>$.*.entidadePais</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>anoInicio</name>
+        <path>$.*.anoInicio</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>anoFim</name>
+        <path>$.*.anoFim</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>dados</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>1024</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>7. Renomear as colunas</name>
+    <type>SelectValues</type>
+    <description>Aplica os nomes usados no banco e descarta o que era apoio: endereço montado e configuração.
+
+Prefixos do projeto: id_ identificador, nm_ nome, sg_ sigla, ds_ texto livre, nr_ número.
+
+A coluna id_deputado precisa continuar aqui. A resposta da API não repete o código do deputado dentro de cada ocupação: ele vem sendo carregado desde a caixa 1.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>id_deputado</name>
+        <rename>id_deputado</rename>
+      </field>
+      <field>
+        <name>titulo</name>
+        <rename>ds_titulo</rename>
+      </field>
+      <field>
+        <name>entidade</name>
+        <rename>nm_entidade</rename>
+      </field>
+      <field>
+        <name>entidadeUF</name>
+        <rename>sg_uf_entidade</rename>
+      </field>
+      <field>
+        <name>entidadePais</name>
+        <rename>nm_pais_entidade</rename>
+      </field>
+      <field>
+        <name>anoInicio</name>
+        <rename>nr_ano_inicio</rename>
+      </field>
+      <field>
+        <name>anoFim</name>
+        <rename>nr_ano_fim</rename>
+      </field>
+      <select_unspecified>N</select_unspecified>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>1264</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>8. Gravar em raw.ocupacoes</name>
+    <type>TableOutput</type>
+    <description>Grava em raw.ocupacoes. A tabela é truncada antes, então cada execução substitui o conteúdo.
+
+Precisa ficar com UMA cópia: com várias, cada uma truncaria a tabela por conta própria e apagaria o que as outras já gravaram.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <commit>1000</commit>
+    <connection>supabase</connection>
+    <fields>
+      <field>
+        <column_name>id_deputado</column_name>
+        <stream_name>id_deputado</stream_name>
+      </field>
+      <field>
+        <column_name>ds_titulo</column_name>
+        <stream_name>ds_titulo</stream_name>
+      </field>
+      <field>
+        <column_name>nm_entidade</column_name>
+        <stream_name>nm_entidade</stream_name>
+      </field>
+      <field>
+        <column_name>sg_uf_entidade</column_name>
+        <stream_name>sg_uf_entidade</stream_name>
+      </field>
+      <field>
+        <column_name>nm_pais_entidade</column_name>
+        <stream_name>nm_pais_entidade</stream_name>
+      </field>
+      <field>
+        <column_name>nr_ano_inicio</column_name>
+        <stream_name>nr_ano_inicio</stream_name>
+      </field>
+      <field>
+        <column_name>nr_ano_fim</column_name>
+        <stream_name>nr_ano_fim</stream_name>
+      </field>
+    </fields>
+    <ignore_errors>N</ignore_errors>
+    <only_when_have_rows>N</only_when_have_rows>
+    <partitioning_daily>N</partitioning_daily>
+    <partitioning_enabled>N</partitioning_enabled>
+    <partitioning_monthly>Y</partitioning_monthly>
+    <return_keys>N</return_keys>
+    <schema>raw</schema>
+    <specify_fields>Y</specify_fields>
+    <table>ocupacoes</table>
+    <tablename_in_field>N</tablename_in_field>
+    <tablename_in_table>Y</tablename_in_table>
+    <truncate>Y</truncate>
+    <use_batch>Y</use_batch>
+    <attributes/>
+    <GUI>
+      <xloc>1472</xloc>
+      <yloc>176</yloc>
+    </GUI>
+  </transform>
+  <transform_error_handling>
+  </transform_error_handling>
+  <attributes/>
+</pipeline>

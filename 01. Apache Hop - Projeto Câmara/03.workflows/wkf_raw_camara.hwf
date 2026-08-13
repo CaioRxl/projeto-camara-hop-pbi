@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow>
+  <name>wkf_raw_camara</name>
+  <name_sync_with_filename>Y</name_sync_with_filename>
+  <description>Carga da camada raw a partir da API da Camara dos Deputados. Execute por aqui.</description>
+  <extended_description>Ponto de entrada do projeto. Execute este arquivo; ele chama os cinco fluxos
+na ordem certa.
+
+  1. get_uf         unidades federativas    -> raw.uf
+  2. get_cotas      teto da cota por UF/mes -> raw.cotas
+  3. get_deputados  deputados em exercicio  -> raw.deputados
+  4. get_despesas   despesas da cota        -> raw.despesas
+  5. get_ocupacoes  ocupacoes profissionais -> raw.ocupacoes
+
+O get_despesas e ordens de grandeza mais demorado que os outros, porque faz
+uma chamada HTTP por pagina de despesa. Ele escreve andamento no log;
+acompanhe por la em vez de esperar em silencio.
+
+A ordem importa: despesas e ocupacoes leem a lista de deputados da tabela que
+o passo 3 acabou de gravar. Rodando fora de ordem, usam o que sobrou da
+execucao anterior. O get_uf e o get_cotas nao dependem de ninguem nem sao
+dependencia de ninguem; estao no inicio so por serem baratos.
+
+O get_cotas e o unico fluxo que nao chama a API da Camara: le uma planilha
+mantida a parte, porque o teto da cota por UF nao esta no Dados Abertos.
+
+O get_ocupacoes depende do get_deputados, nao do get_despesas. Esta por
+ultimo apenas para nao competir por conexao com a coleta pesada.
+
+Se um passo falhar, o workflow para ali e nao executa os seguintes. E melhor
+parar com a carga pela metade do que seguir gravando dado inconsistente.
+
+Antes da primeira execucao, rode 01. raw/ddl.sql no banco para criar as
+tabelas.</extended_description>
+  <workflow_version/>
+  <created_user>-</created_user>
+  <created_date>2026/08/07 10:00:00.000</created_date>
+  <modified_user>-</modified_user>
+  <modified_date>2026/08/07 17:00:00.000</modified_date>
+  <parameters>
+    </parameters>
+  <actions>
+    <action>
+      <name>Start</name>
+      <description>Ponto de partida. Toda execucao comeca por aqui.</description>
+      <type>SPECIAL</type>
+      <attributes/>
+      <DayOfMonth>1</DayOfMonth>
+      <hour>12</hour>
+      <intervalMinutes>60</intervalMinutes>
+      <intervalSeconds>0</intervalSeconds>
+      <minutes>0</minutes>
+      <repeat>N</repeat>
+      <schedulerType>0</schedulerType>
+      <weekDay>1</weekDay>
+      <parallel>N</parallel>
+      <xloc>96</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>get_uf.hpl</name>
+      <description>Carrega as unidades federativas em raw.uf.
+
+Tabela de apoio, usada para traduzir sigla em nome. Nao depende de nenhum outro fluxo e nenhum outro depende dela.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/01. raw/get_uf.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>272</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>get_cotas</name>
+      <description>Carrega o teto da cota parlamentar por UF e mês em raw.cotas.
+
+Único passo que não chama a API: lê uma planilha mantida à parte, porque o Dados Abertos não expõe esse valor. Independente dos demais, está aqui por ser barato, junto do outro passo de referência.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/01. raw/get_cotas.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>432</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>get_deputados</name>
+      <description>Carrega os deputados em exercicio em raw.deputados.
+
+Precisa rodar antes do get_despesas: e desta tabela que o proximo passo tira a lista de quem consultar e a legislatura corrente.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/01. raw/get_deputados.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>608</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>get_despesas</name>
+      <description>Carrega as despesas da cota parlamentar em raw.despesas.
+
+Le a lista que o passo anterior gravou e consulta os gastos de cada deputado, pagina por pagina.
+
+E o passo mais demorado do projeto e o unico que costuma parecer travado. Ele escreve no log o total de paginas a baixar e o andamento em intervalos regulares; use isso para estimar quanto falta.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/01. raw/get_despesas.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>768</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>get_ocupacoes</name>
+      <description>Carrega as ocupacoes profissionais dos deputados em raw.ocupacoes.
+
+Uma chamada por deputado, sem paginacao. Bem mais rapido que o passo anterior.
+
+Depende do get_deputados, nao do get_despesas: esta depois so para nao competir por conexao com a coleta pesada.</description>
+      <type>PIPELINE</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <clear_files>N</clear_files>
+      <clear_rows>N</clear_rows>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/01. raw/get_ocupacoes.hpl</filename>
+      <loglevel>Basic</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>928</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>Success</name>
+      <description>Chegou aqui: todas requisições feitas com sucesso</description>
+      <type>SUCCESS</type>
+      <attributes/>
+      <parallel>N</parallel>
+      <xloc>1088</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+  </actions>
+  <hops>
+    <hop>
+      <from>Start</from>
+      <to>get_uf.hpl</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+    <hop>
+      <from>get_despesas</from>
+      <to>get_ocupacoes</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>get_ocupacoes</from>
+      <to>Success</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>get_cotas</from>
+      <to>get_deputados</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>get_deputados</from>
+      <to>get_despesas</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>get_uf.hpl</from>
+      <to>get_cotas</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+  </hops>
+  <notepads>
+  </notepads>
+  <attributes/>
+</workflow>

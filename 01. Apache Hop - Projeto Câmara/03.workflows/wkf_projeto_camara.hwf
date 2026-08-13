@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workflow>
+  <name>wkf_projeto_camara</name>
+  <name_sync_with_filename>Y</name_sync_with_filename>
+  <description>Carga completa do projeto: camada raw e depois refined. Execute por aqui.</description>
+  <extended_description>Ponto de entrada do projeto inteiro. Encadeia os dois workflows de camada.
+
+  1. wkf_raw_camara      coleta da API      -> schema raw
+  2. wkf_refined_camara  modelo estrela     -> schema refined
+
+A ordem e obrigatoria: a refined le do schema raw. Rodando so a refined, ela
+processa o que estiver na raw naquele momento, que pode ser de dias atras.
+
+Quase todo o tempo de execucao esta na coleta da raw, que faz uma chamada
+HTTP por pagina de despesa. A refined roda sobre o banco e e rapida em
+comparacao.
+
+As duas acoes estao com nivel de log "Nothing", o que silencia o detalhe de
+cada passo interno. Se precisar acompanhar o andamento, troque para "Basic":
+o pipeline de despesas escreve o proprio progresso e so aparece nesse nivel.
+
+Antes da primeira execucao, rode no banco, nesta ordem:
+  01. raw/ddl.sql
+  02. refined/ddl.sql</extended_description>
+  <workflow_version/>
+  <created_user>-</created_user>
+  <created_date>2026/08/07 18:51:34.399</created_date>
+  <modified_user>-</modified_user>
+  <modified_date>2026/08/07 19:00:00.000</modified_date>
+  <parameters>
+    </parameters>
+  <actions>
+    <action>
+      <name>Start</name>
+      <description>Ponto de partida. Toda execucao comeca por aqui.</description>
+      <type>SPECIAL</type>
+      <attributes/>
+      <DayOfMonth>1</DayOfMonth>
+      <hour>12</hour>
+      <intervalMinutes>60</intervalMinutes>
+      <intervalSeconds>0</intervalSeconds>
+      <minutes>0</minutes>
+      <repeat>N</repeat>
+      <schedulerType>0</schedulerType>
+      <weekDay>1</weekDay>
+      <parallel>N</parallel>
+      <xloc>96</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>wkf_raw_camara.hwf</name>
+      <description>Coleta os dados da API da Camara e grava no schema raw.
+
+Concentra quase todo o tempo de execucao do projeto, porque faz uma chamada HTTP por pagina de despesa.
+
+Esta acao esta com log "Nothing". Troque para "Basic" se quiser acompanhar o andamento pelo log.</description>
+      <type>WORKFLOW</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/03.workflows/wkf_raw_camara.hwf</filename>
+      <loglevel>Nothing</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>256</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>wkf_refined_camara.hwf</name>
+      <description>Monta o modelo estrela no schema refined, a partir do que a camada raw acabou de gravar.
+
+Nao acessa a internet: le do proprio banco. Rapida em comparacao com a raw.</description>
+      <type>WORKFLOW</type>
+      <attributes/>
+      <add_date>N</add_date>
+      <add_time>N</add_time>
+      <create_parent_folder>N</create_parent_folder>
+      <exec_per_row>N</exec_per_row>
+      <filename>${PROJECT_HOME}/03.workflows/wkf_refined_camara.hwf</filename>
+      <loglevel>Nothing</loglevel>
+      <parameters>
+        <pass_all_parameters>Y</pass_all_parameters>
+      </parameters>
+      <params_from_previous>N</params_from_previous>
+      <run_configuration>local</run_configuration>
+      <set_append_logfile>N</set_append_logfile>
+      <set_logfile>N</set_logfile>
+      <wait_until_finished>Y</wait_until_finished>
+      <parallel>N</parallel>
+      <xloc>432</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+    <action>
+      <name>Success</name>
+      <description>Chegou aqui: as duas camadas foram carregadas sem erro.</description>
+      <type>SUCCESS</type>
+      <attributes/>
+      <parallel>N</parallel>
+      <xloc>608</xloc>
+      <yloc>96</yloc>
+      <attributes_hac/>
+    </action>
+  </actions>
+  <hops>
+    <hop>
+      <from>Start</from>
+      <to>wkf_raw_camara.hwf</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>Y</unconditional>
+    </hop>
+    <hop>
+      <from>wkf_raw_camara.hwf</from>
+      <to>wkf_refined_camara.hwf</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+    <hop>
+      <from>wkf_refined_camara.hwf</from>
+      <to>Success</to>
+      <enabled>Y</enabled>
+      <evaluation>Y</evaluation>
+      <unconditional>N</unconditional>
+    </hop>
+  </hops>
+  <notepads>
+  </notepads>
+  <attributes/>
+</workflow>

@@ -1,0 +1,19 @@
+{
+  "variables" : [ {
+    "name" : "p_servidor_banco",
+    "value" : "SEU-SERVIDOR-SUPABASE-AQUI",
+    "description" : ""
+  }, {
+    "name" : "p_porta_servidor",
+    "value" : "6543",
+    "description" : ""
+  }, {
+    "name" : "p_banco",
+    "value" : "postgres",
+    "description" : ""
+  }, {
+    "name" : "p_user",
+    "value" : "SEU-USUARIO-SUPABASE-AQUI",
+    "description" : ""
+  } ]
+}

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeto Câmara — camada refined</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#2563EB; --brand-light:#60A5FA; --brand-dark:#1E40AF;
+    --bg:#F8FAFC; --border:#E2E8F0; --ink:#0F172A;
+    --muted:#64748B; --muted-2:#94A3B8;
+    --grad:linear-gradient(165deg,#1E40AF 0%,#2563EB 50%,#60A5FA 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Space Grotesk",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{display:flex;max-width:1360px;margin:0 auto}
+  aside{width:258px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:#fff;padding:26px 0}
+  main{flex:1;min-width:0;padding:0 54px 110px}
+
+  .side-brand{padding:0 24px 18px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .side-brand h1{font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .side-brand p{font-size:11px;color:var(--muted-2);margin-top:2px}
+  nav a{display:block;padding:7px 24px;font-size:13px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover{color:var(--brand);background:#F1F5F9;border-left-color:var(--brand-light)}
+  nav .grp{padding:15px 24px 5px;font-size:9.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted-2)}
+
+  .hero{background:var(--grad);color:#fff;margin:0 -54px 40px;padding:52px 54px 44px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;top:-90px;right:-70px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.07)}
+  .hero .tag{font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.65)}
+  .hero h1{font-size:38px;font-weight:700;letter-spacing:-.8px;line-height:1.1;margin:12px 0 14px}
+  .hero p{font-size:15.5px;color:rgba(255,255,255,.88);max-width:700px;position:relative;z-index:2}
+
+  h2{font-size:25px;font-weight:700;letter-spacing:-.4px;margin:56px 0 8px;padding-top:12px;scroll-margin-top:20px}
+  h2 .num{color:var(--brand);font-weight:400;margin-right:10px}
+  h3{font-size:16.5px;font-weight:600;letter-spacing:-.2px;margin:32px 0 10px}
+  h4{font-size:14px;font-weight:600;margin:20px 0 4px}
+  p{margin:12px 0;font-size:14.5px}
+  ul,ol{margin:12px 0 12px 22px;font-size:14.5px}
+  li{margin:6px 0}
+  a{color:var(--brand)}
+  .lead{font-size:16px;color:var(--muted)}
+  strong{font-weight:600}
+
+  code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;background:#EEF2F7;color:#1E40AF;padding:2px 6px;border-radius:4px}
+  pre{background:var(--ink);color:#E2E8F0;padding:18px 20px;border-radius:10px;overflow-x:auto;margin:16px 0;font-size:12.5px;line-height:1.6}
+  pre code{background:none;color:inherit;padding:0}
+  .diagram{background:#fff;border:1px solid var(--border);color:var(--ink)}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  th{background:#F1F5F9;text-align:left;padding:10px 14px;font-weight:600;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+  td{padding:10px 14px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  tbody tr:nth-child(even){background:#FAFCFE}
+  td code{font-size:12px}
+
+  .box{border-left:3px solid var(--brand);background:#fff;border-radius:0 8px 8px 0;padding:15px 20px;margin:18px 0;border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .box p:first-child{margin-top:0}.box p:last-child{margin-bottom:0}
+  .box .t{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--brand);margin-bottom:5px}
+  .box.warn{border-left-color:#D97706}.box.warn .t{color:#B45309}
+  .box.danger{border-left-color:#DC2626}.box.danger .t{color:#B91C1C}
+
+  .aud{display:inline-block;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;padding:3px 10px;border-radius:20px;vertical-align:middle;margin-left:10px}
+  .aud.simple{background:#DCFCE7;color:#166534}
+  .aud.tech{background:#E0E7FF;color:#3730A3}
+
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted-2)}
+
+  @media(max-width:980px){
+    aside{display:none}
+    main{padding:0 22px 80px}
+    .hero{margin:0 -22px 32px;padding:38px 22px}
+    .hero h1{font-size:28px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<aside>
+  <div class="side-brand">
+    <h1>Projeto Câmara</h1>
+    <p>Apache Hop · camada refined</p>
+  </div>
+  <nav>
+    <div class="grp">Geral</div>
+    <a href="#s1">1. O que a camada faz</a>
+    <a href="#s2">2. Como executar</a>
+    <a href="#s3">3. Visão geral</a>
+    <a href="#s4">4. As dimensões</a>
+    <a href="#s5">5. As fatos</a>
+    <a href="#s6">6. Padronização de texto</a>
+    <div class="grp">Técnico</div>
+    <a href="#s7">7. Detalhes técnicos</a>
+    <a href="#s8">8. Tabelas</a>
+    <a href="#s9">9. Consultas de exemplo</a>
+    <a href="#s10">10. Erros comuns</a>
+    <div class="grp">Apoio</div>
+    <a href="#s11">11. Glossário</a>
+    <a href="#s12">12. Arquivos</a>
+  </nav>
+</aside>
+
+<main>
+
+<div class="hero">
+  <span class="tag">Apache Hop · Modelo dimensional</span>
+  <h1>Camada refined</h1>
+  <p>Modelo estrela construído sobre o schema raw: duas dimensões e três fatos, prontas para consumo em Power BI ou SQL.</p>
+</div>
+
+<div class="box">
+  <p>As seções <strong>1 a 6</strong> explicam o que a camada faz e não exigem conhecimento de Hop. Da <strong>7 em diante</strong> o texto assume familiaridade com a ferramenta e com SQL.</p>
+  <p>A documentação da camada raw fica em <code>01. raw/documentacao/</code>. Ela explica de onde os dados vêm; esta aqui explica o que é feito com eles depois.</p>
+</div>
+
+<h2 id="s1"><span class="num">1</span>O que esta camada faz<span class="aud simple">geral</span></h2>
+<p>A camada <code>raw</code> guarda os dados como a origem devolveu: todas as colunas, sem tratamento, textos em caixa alta, linhas vazias preservadas. É fiel à origem, mas desconfortável de consultar.</p>
+<p>A camada <code>refined</code> reorganiza isso num <strong>modelo estrela</strong>: duas tabelas de dimensão, que descrevem <em>quem</em> e <em>onde</em>, e três tabelas fato, que registram <em>o que aconteceu</em> — ou, no caso de uma delas, <em>o que era permitido</em>.</p>
+
+<pre class="diagram"><code>   dim_uf                    dim_deputado              fato_despesas
+   ┌────────────────┐        ┌──────────────┐          ┌──────────────┐
+   │ sg_uf           │◄──┬───│ sg_uf        │◄─────┐   │ id_despesa   │
+   │ nm_uf           │   │   │ id_deputado  │◄──┐  └───│ id_deputado  │
+   │ ds_url_bandeira │   │   │ nm_deputado  │   │      │ dt_documento │
+   └────────────────┘    │   │ sg_partido   │   │      │ vl_documento │
+                          │   │ ds_url_foto  │   │      └──────────────┘
+                          │   └──────────────┘   │
+           fato_cotas     │                      │      fato_ocupacao
+           ┌──────────────┐                      │      ┌──────────────┐
+           │ id_cota      │                      └──────│ id_ocupacao  │
+           │ sg_uf        │                             │ id_deputado  │
+           │ dt_competencia│                            │ ds_titulo    │
+           │ vl_cota      │                             │ nm_entidade  │
+           └──────────────┘                             └──────────────┘</code></pre>
+
+<p>Quatro coisas acontecem aqui:</p>
+<ul>
+  <li><strong>Seleção.</strong> Só passa adiante o que a análise usa.</li>
+  <li><strong>Formatação.</strong> O CNPJ/CPF, que vem só com dígitos, ganha máscara. O mês de competência da cota, que vem como texto, vira data.</li>
+  <li><strong>Padronização.</strong> Textos que a API entrega em caixa alta passam a ter apenas as iniciais em maiúscula. O nome do estado também perde a acentuação.</li>
+  <li><strong>Derivação.</strong> Uma coluna nova, <code>tp_pessoa</code>, classifica o fornecedor em pessoa física ou jurídica.</li>
+</ul>
+<p>E uma limpeza: as linhas vazias que a raw guarda para deputado sem ocupação registrada são descartadas.</p>
+<div class="box">
+  <p><code>fato_cotas</code> é diferente das outras duas fatos: não tem grão de deputado, registra o teto permitido por UF e mês, não um gasto. Serve de referência para comparar contra <code>fato_despesas</code>.</p>
+</div>
+
+<h2 id="s2"><span class="num">2</span>Como executar<span class="aud simple">geral</span></h2>
+
+<div class="box warn">
+  <div class="t">Antes da primeira vez</div>
+  <p>Rode <code>02. refined/ddl.sql</code> no banco. Ele derruba e recria as cinco tabelas. A camada raw precisa existir antes.</p>
+</div>
+
+<p>Para rodar só esta camada, abra <strong><code>03.workflows/wkf_refined_camara.hwf</code></strong>. Para a carga completa, abra <strong><code>03.workflows/wkf_projeto_camara.hwf</code></strong>.</p>
+
+<table>
+  <thead><tr><th>Pipeline</th><th>Peso</th><th>Tabela</th></tr></thead>
+  <tbody>
+    <tr><td><code>dim_uf</code></td><td>segundos</td><td><code>refined.dim_uf</code></td></tr>
+    <tr><td><code>fato_cotas</code></td><td>segundos</td><td><code>refined.fato_cotas</code></td></tr>
+    <tr><td><code>dim_deputado</code></td><td>segundos</td><td><code>refined.dim_deputado</code></td></tr>
+    <tr><td><code>fato_despesas</code></td><td>o volume da camada</td><td><code>refined.fato_despesas</code></td></tr>
+    <tr><td><code>fato_ocupacao</code></td><td>segundos</td><td><code>refined.fato_ocupacao</code></td></tr>
+  </tbody>
+</table>
+<p>Esta camada é rápida em comparação com a raw: não acessa a internet, lê do próprio banco.</p>
+
+<h3>Conferindo o resultado</h3>
+<p>Como não há chave estrangeira declarada, vale rodar as verificações depois da carga. Todas devem voltar zero:</p>
+<pre><code>-- despesas de deputado que não existe na dimensão
+SELECT COUNT(*)
+FROM   refined.fato_despesas f
+LEFT   JOIN refined.dim_deputado d ON d.id_deputado = f.id_deputado
+WHERE  d.id_deputado IS NULL;
+
+-- ocupações de deputado que não existe na dimensão
+SELECT COUNT(*)
+FROM   refined.fato_ocupacao o
+LEFT   JOIN refined.dim_deputado d ON d.id_deputado = o.id_deputado
+WHERE  d.id_deputado IS NULL;
+
+-- deputados de UF que não existe na dimensão
+SELECT COUNT(*)
+FROM   refined.dim_deputado d
+LEFT   JOIN refined.dim_uf u ON u.sg_uf = d.sg_uf
+WHERE  u.sg_uf IS NULL;
+
+-- cotas de UF que não existe na dimensão
+SELECT COUNT(*)
+FROM   refined.fato_cotas c
+LEFT   JOIN refined.dim_uf u ON u.sg_uf = c.sg_uf
+WHERE  u.sg_uf IS NULL;
+
+-- ocupações vazias que escaparam do filtro
+SELECT COUNT(*)
+FROM   refined.fato_ocupacao
+WHERE  ds_titulo IS NULL AND nm_entidade IS NULL;</code></pre>
+
+<h2 id="s3"><span class="num">3</span>Visão geral<span class="aud simple">geral</span></h2>
+<pre class="diagram"><code>Start → dim_uf → fato_cotas → dim_deputado → fato_despesas → fato_ocupacao → Success
+          ↓           ↓             ↓                ↓                ↓
+       dim_uf    fato_cotas    dim_deputado    fato_despesas    fato_ocupacao</code></pre>
+<p>Cada seta significa "só continue se o anterior deu certo".</p>
+<p>A ordem segue a convenção de modelo dimensional: dimensões antes das fatos. Aqui isso não é imposição do banco, porque não há chave estrangeira declarada — mas vale manter, para que nenhuma fato aponte para um deputado ou UF que a dimensão ainda não tem.</p>
+<div class="box">
+  <p><code>fato_cotas</code> fica logo após <code>dim_uf</code> porque os dois giram em torno de UF; nenhum dos dois depende de deputado. É a única fato do modelo que não precisa esperar o <code>dim_deputado</code>.</p>
+</div>
+
+<h2 id="s4"><span class="num">4</span>As duas dimensões<span class="aud simple">geral</span></h2>
+<p><code>dim_uf</code> e <code>dim_deputado</code> têm quase a mesma forma:</p>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler <code>raw.&lt;tabela&gt;</code></td><td><code>SELECT</code> completo da tabela de origem</td></tr>
+    <tr><td>2</td><td>Selecionar e formatar</td><td>Escolhe as colunas da dimensão e fixa os tipos</td></tr>
+    <tr><td>3</td><td>Padronizar o nome do estado</td><td><em>(só em <code>dim_uf</code>)</em> iniciais maiúsculas</td></tr>
+    <tr><td>4</td><td>Remover acentos do nome do estado</td><td><em>(só em <code>dim_uf</code>)</em> tira acentuação</td></tr>
+    <tr><td>5</td><td>Gravar em <code>refined.&lt;tabela&gt;</code></td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+<p><code>dim_deputado</code> não tem as caixas 3 e 4: não tem nenhum texto que precise de padronização de maiúscula ou acento.</p>
+<p>O <code>SELECT</code> da caixa 1 traz todas as colunas de propósito, mesmo as que não seguem adiante. Assim, incluir uma coluna depois é questão de marcá-la na caixa 2.</p>
+
+<h3>O que cada dimensão descarta, e por quê</h3>
+<p><strong><code>dim_uf</code></strong> fica com sigla, nome e o link da bandeira. O código da Câmara não vai adiante porque nada se liga por ele: quem faz o vínculo com o deputado é a sigla. A coluna de descrição também sai, já que a API sempre a devolve vazia. O link da bandeira (<code>ds_url_bandeira</code>) segue adiante mesmo sendo um dado de outra API, não da Câmara: é URL de imagem, com o mesmo papel de <code>dim_deputado.ds_url_foto</code> — uso em relatório, não em filtro ou agrupamento.</p>
+<p><strong><code>dim_deputado</code></strong> descarta as URIs de API, o e-mail de gabinete e a legislatura. São metadados de coleta, sem valor analítico aqui.</p>
+
+<h2 id="s5"><span class="num">5</span>As três fatos<span class="aud simple">geral</span></h2>
+
+<h3><code>fato_cotas</code></h3>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler raw.cotas</td><td><code>SELECT</code> com <code>TRIM</code> em <code>sg_uf</code></td></tr>
+    <tr><td>2</td><td>Selecionar e formatar</td><td>Escolhe as colunas, converte o mês de competência para data</td></tr>
+    <tr><td>3</td><td>Gravar em <code>refined.fato_cotas</code></td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+<p><strong>Granularidade:</strong> uma linha por UF e mês de competência. <strong>Sem deputado</strong> — é a única fato do modelo assim. Registra o teto permitido para o estado naquele mês, não um gasto individual.</p>
+<div class="box">
+  <p><strong>Por que é fato, e não dimensão.</strong> O valor muda com o tempo, por Ato da Mesa. Uma dimensão descreve um atributo estável; aqui o mesmo par (UF, mês) tem valores diferentes ao longo da série, o que é comportamento de fato.</p>
+</div>
+<p><strong>A conversão de data.</strong> A raw guarda o mês de competência como texto <code>"mm/aaaa"</code>. A caixa 2 usa a máscara <code>MM/yyyy</code> para convertê-lo em <code>date</code>; como a máscara não tem dia, o Hop preenche com o primeiro dia daquele mês.</p>
+<p><strong>O <code>TRIM</code> na caixa 1.</strong> A planilha de origem é alimentada à mão. Espaço sobrando na sigla do estado quebraria o vínculo com <code>dim_uf</code>. Fica no SQL, e não em um transform do Hop, pelo mesmo motivo do CNPJ em <code>fato_despesas</code>.</p>
+
+<h3><code>fato_despesas</code></h3>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler e tratar <code>raw.despesas</code></td><td><code>SELECT</code> com máscara de CNPJ/CPF e derivação do tipo de pessoa</td></tr>
+    <tr><td>2</td><td>Selecionar e formatar</td><td>Escolhe as colunas da fato e fixa os tipos</td></tr>
+    <tr><td>3</td><td>Padronizar o tipo de despesa</td><td>Iniciais maiúsculas na categoria</td></tr>
+    <tr><td>4</td><td>Gravar em <code>refined.fato_despesas</code></td><td>Truncate e insert em lotes</td></tr>
+  </tbody>
+</table>
+<p><strong>Granularidade:</strong> uma linha por despesa, a mesma da raw. Não há agregação.</p>
+<p><strong>Máscara.</strong> O CNPJ/CPF chega da API só com dígitos. Um <code>CASE</code> olha o tamanho e aplica o formato: 11 dígitos viram CPF (<code>000.000.000-00</code>), 14 viram CNPJ (<code>00.000.000/0000-00</code>). Outro tamanho passa como está.</p>
+<p><strong>Tipo de pessoa.</strong> Pelo mesmo critério de tamanho, uma coluna nova classifica o fornecedor em <code>PF</code> ou <code>PJ</code>.</p>
+<div class="box">
+  <p>Os dois ficam no SQL, e não em transforms do Hop, porque o banco resolve tudo de uma vez ao montar o resultado, em vez de o Hop processar linha a linha.</p>
+</div>
+
+<h3><code>fato_ocupacao</code></h3>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler e filtrar <code>raw.ocupacoes</code></td><td><code>SELECT</code> com filtro das linhas vazias</td></tr>
+    <tr><td>2</td><td>Selecionar e formatar</td><td>Escolhe as colunas e fixa os tipos</td></tr>
+    <tr><td>3</td><td>Gravar em <code>refined.fato_ocupacao</code></td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+<p><strong>Granularidade:</strong> uma linha por ocupação declarada. Um deputado pode ter várias, uma, ou nenhuma.</p>
+<p>É uma <strong>fato sem medidas</strong>, o que na modelagem dimensional se chama <em>factless fact</em>: não há valor a somar, o que se registra é que o vínculo existiu. Serve para responder quantos deputados já foram professores, de que entidades vieram, em que período, e para cruzar profissão de origem com padrão de gasto.</p>
+<p>O filtro da caixa 1 é o ponto principal deste fluxo:</p>
+<pre><code>WHERE ds_titulo   IS NOT NULL
+   OR nm_entidade IS NOT NULL</code></pre>
+<div class="box warn">
+  <p>A API devolve, para deputado sem ocupação registrada, uma linha com todos os campos nulos, em vez de uma lista vazia. A raw guarda essas linhas por fidelidade à origem; aqui elas saem, senão virariam ocupações fantasma na contagem.</p>
+  <p>O teste usa título <strong>e</strong> entidade, e não só um deles, porque há registros históricos em que um vem preenchido e o outro não.</p>
+</div>
+
+<h2 id="s6"><span class="num">6</span>Padronização de texto<span class="aud simple">geral</span></h2>
+<p>A API entrega <code>nm_uf</code> e <code>ds_tipo_despesa</code> em caixa alta. Dois tratamentos corrigem isso: iniciais maiúsculas (os dois campos) e remoção de acento (só <code>nm_uf</code>, por enquanto).</p>
+
+<h3>Por que isso está aqui, e não na raw</h3>
+<p>Foi uma decisão deliberada, não um acaso de onde ficou mais fácil escrever o código.</p>
+<div class="box">
+  <p>A raw existe para guardar o dado <strong>exatamente como a origem entregou</strong> — é o que garante que, se algo parecer errado lá na frente, dá para conferir contra a fonte sem depender de nenhuma transformação no meio do caminho. Qualquer limpeza (maiúscula, acento, trim, máscara) descaracteriza esse papel: se a raw já chegasse tratada, não haveria como distinguir "isso veio assim da Câmara" de "isso foi ajustado por um pipeline nosso".</p>
+</div>
+<p>A refined existe para o oposto: preparar o dado para quem vai consumir — Power BI, SQL ad hoc, outra ferramenta. Padronização de texto é exatamente esse tipo de preparo, então pertence aqui.</p>
+<p>Há também um motivo prático: <strong>buscas e comparações por texto ficam mais simples sem acento.</strong> Um filtro ou um <code>JOIN</code> por <code>nm_uf = 'Sao Paulo'</code> não depende de o usuário digitar o "ã" corretamente, nem de o teclado ou a ferramenta de origem preservar acentuação. Isso só vale a pena resolver na camada de consumo — fazer isso na raw só empurraria o mesmo problema para dentro dela.</p>
+<p>Por esse critério, os dois tratamentos já nasceram no lugar certo desde a primeira versão deste projeto: a caixa de maiúsculas sempre esteve na refined. A remoção de acento segue a mesma regra e entrou na refined também, como caixa nova logo depois.</p>
+
+<h3>Iniciais maiúsculas: String operations</h3>
+<p>Dois steps do tipo <strong>String operations</strong> corrigem a caixa alta: um no <code>dim_uf</code>, outro no <code>fato_despesas</code>.</p>
+<p>Cada um aplica três operações encadeadas ao mesmo campo, e <strong>a ordem em que o Hop as executa importa</strong>:</p>
+<table>
+  <thead><tr><th style="width:70px">Ordem</th><th>Operação</th><th>Efeito</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Trim</td><td>Remove espaços nas pontas</td></tr>
+    <tr><td>2</td><td>Lower</td><td>Passa tudo para minúscula</td></tr>
+    <tr><td>3</td><td>InitCap</td><td>Sobe a inicial de cada palavra</td></tr>
+  </tbody>
+</table>
+<div class="box danger">
+  <div class="t">O Lower é indispensável</div>
+  <p>O <code>InitCap</code> do Hop só levanta a primeira letra de cada palavra e deixa o resto como está — sozinho, <code>SÃO PAULO</code> continuaria <code>SÃO PAULO</code>. Passando por minúscula antes, vira <code>são paulo</code> e depois <code>São Paulo</code>.</p>
+</div>
+<p>O campo é atualizado no lugar: com o campo de saída vazio, o Hop sobrescreve a própria coluna em vez de criar outra.</p>
+
+<h3>Remoção de acento: Janino</h3>
+<p>Só o <code>dim_uf</code> tem esse tratamento, na caixa 4, logo depois do <code>String operations</code>. Usa a fórmula:</p>
+<pre><code>nm_uf == null ? null : java.text.Normalizer.normalize(nm_uf, java.text.Normalizer.Form.NFD)
+                          .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")</code></pre>
+<p><code>Normalizer.normalize(..., NFD)</code> separa cada letra acentuada em duas partes: a letra base e uma marca de acento à parte (por exemplo, "ã" vira "a" + til). A regex descarta essas marcas. O resultado cobre qualquer acento do português sem precisar de uma lista de letra por letra, e não depende de "adivinhar" todas as combinações possíveis.</p>
+<div class="box">
+  <p>Diferente do <code>String operations</code>, o <code>Janino</code> não sobrescreve o campo de entrada: grava num campo novo, <code>nm_uf_sem_acento</code>. Quem aponta a coluna <code>nm_uf</code> da tabela para esse campo novo é a própria caixa de gravação, no mapeamento de colunas — mesmo padrão já usado no <code>fato_despesas</code> para o CNPJ formatado (seção 5). Evita depender de o Hop substituir um campo existente pelo mesmo nome, um comportamento menos direto de testar do que simplesmente mapear a coluna certa na gravação.</p>
+</div>
+<p>A ordem entre as caixas 3 e 4 não muda o resultado: acento não afeta maiúscula/minúscula. Ficam em caixas separadas porque são responsabilidades diferentes, e separar facilita entender — e reaproveitar — cada uma isoladamente.</p>
+
+<h3>O que esperar do resultado</h3>
+<pre><code>SÃO PAULO                       →  Sao Paulo
+CEARÁ                           →  Ceara
+ESPÍRITO SANTO                  →  Espirito Santo
+COMBUSTÍVEIS E LUBRIFICANTES.   →  Combustíveis E Lubrificantes.   (sem remoção de acento, ver abaixo)
+MANUTENÇÃO DE ESCRITÓRIO        →  Manutenção De Escritório        (sem remoção de acento, ver abaixo)</code></pre>
+<div class="box warn">
+  <p>O <code>InitCap</code> sobe a inicial de <strong>toda</strong> palavra, inclusive conectivos: sai <code>De</code>, <code>E</code>, <code>À</code> em maiúscula. É o comportamento padrão do transform. Deixar conectivos em minúscula exigiria uma regra com lista de exceções, que este step não faz — se algum dia for necessário, o caminho é trocar o <code>String operations</code> por uma expressão no SQL da caixa 1.</p>
+</div>
+<div class="box warn">
+  <div class="t">A remoção de acento só existe em dim_uf.nm_uf</div>
+  <p><code>fato_despesas.ds_tipo_despesa</code> continua acentuado (<code>Combustíveis E Lubrificantes.</code>). Não há uma razão técnica para a diferença — foi o que este pedido cobriu. Se algum dia fizer sentido igualar, é o mesmo padrão: uma caixa <code>Janino</code> a mais, logo depois da caixa de maiúsculas do <code>fato_despesas</code>.</p>
+</div>
+<p>Os campos de <code>fato_ocupacao</code> não passam por nenhum dos dois tratamentos: a API já os entrega em caixa mista (<code>Professora</code>, <code>Fundação Julita</code>).</p>
+<p><code>fato_cotas</code> também não passa: <code>sg_uf</code> é sigla (código), não nome por extenso, e não tem padrão de capitalização nem acento a corrigir.</p>
+
+<h2 id="s7"><span class="num">7</span>Detalhes técnicos<span class="aud tech">técnico</span></h2>
+
+<h3>7.1 Por que não há chave estrangeira</h3>
+<div class="box danger">
+  <div class="t">Truncate e FK são incompatíveis</div>
+  <p>Os pipelines gravam com <code>truncate</code>, e o Postgres <strong>recusa <code>TRUNCATE</code> numa tabela referenciada por chave estrangeira</strong> — inclusive quando a tabela filha está vazia. Uma FK de <code>fato_despesas</code> para <code>dim_deputado</code> faria o <code>dim_deputado</code> falhar já na primeira execução, e o mesmo vale para <code>dim_uf</code> e <code>fato_cotas</code>.</p>
+</div>
+<p>Alternativas descartadas: <code>TRUNCATE ... CASCADE</code> apagaria as fatos ao recarregar uma dimensão; trocar truncate por <code>DELETE</code> seria muito mais lento no volume da fato de despesas.</p>
+<p>A ligação é lógica, e as consultas de verificação no fim do <code>ddl.sql</code> cobrem o que a FK cobriria. A camada raw tem a mesma restrição.</p>
+
+<h3>7.2 As chaves não são estáveis entre execuções</h3>
+<div class="box warn">
+  <p><code>fato_despesas.id_despesa</code>, <code>fato_ocupacao.id_ocupacao</code> e <code>fato_cotas.id_cota</code> vêm da raw, onde são <code>bigserial</code> gerados pelo banco. Como a raw é truncada e recarregada por completo a cada execução, <strong>o mesmo registro recebe um número diferente a cada carga</strong>.</p>
+</div>
+<p>Funcionam como chave dentro de uma mesma carga, e é por isso que servem de PK. Não servem para comparar cargas diferentes, nem para guardar referência em sistema externo.</p>
+<p>Se um dia isso incomodar, o caminho é construir uma chave a partir dos atributos de negócio. Em <code>fato_cotas</code>, o par (<code>sg_uf</code>, <code>dt_competencia</code>) já é uma chave natural estável — ao contrário de <code>fato_despesas</code>, onde <code>cd_documento</code> não é único na origem.</p>
+
+<h3>7.3 A máscara de data não trunca</h3>
+<p>A caixa 2 do <code>fato_despesas</code> declara <code>dt_documento</code> como <code>Date</code> com máscara <code>dd/MM/yyyy</code>. Essa máscara é <strong>só de exibição</strong>: não corta a hora do valor.</p>
+<p>Quem descarta a hora é a coluna de destino, declarada como <code>date</code> no DDL. Se um dia a hora fizer falta, basta trocar o tipo da coluna para <code>timestamp</code>.</p>
+
+<h3>7.4 A conversão de <code>dt_competencia</code> em <code>fato_cotas</code></h3>
+<p>Vai na direção oposta da 7.3: aqui o texto vira data, não o contrário.</p>
+<p>A caixa 2 do <code>fato_cotas</code> declara <code>dt_competencia</code> como <code>Date</code> com máscara <code>MM/yyyy</code>. Como a máscara não tem componente de dia, o Hop assume o primeiro dia do mês para todo registro — não é uma suposição arriscada, é literalmente como o <code>SimpleDateFormat</code> do Java resolve campos ausentes ao interpretar uma máscara parcial.</p>
+<div class="box">
+  <p>Na prática, isso permite comparar <code>fato_cotas.dt_competencia</code> com <code>date_trunc('month', fato_despesas.dt_documento)</code> sem manipular texto. Ver exemplo na seção 9.</p>
+</div>
+
+<h3>7.5 O <code>ELSE</code> do <code>tp_pessoa</code></h3>
+<pre><code>CASE
+  WHEN LENGTH(TRIM(nr_cnpj_cpf_fornecedor)) = 11 THEN 'PF'
+  WHEN LENGTH(TRIM(nr_cnpj_cpf_fornecedor)) = 14 THEN 'PJ'
+  ELSE nr_cnpj_cpf_fornecedor
+END AS tp_pessoa</code></pre>
+<p>Na prática isso acontece nas despesas de passagem aérea, que vêm com o campo vazio: a coluna recebe string vazia em vez de um código de tipo.</p>
+<p>É comportamento conhecido e mantido de propósito. Ao filtrar por tipo de pessoa, considere que existem valores fora de <code>PF</code>/<code>PJ</code>:</p>
+<pre><code>SELECT tp_pessoa, COUNT(*)
+FROM   refined.fato_despesas
+GROUP  BY tp_pessoa
+ORDER  BY 2 DESC;</code></pre>
+
+<h3>7.6 <code>sg_uf_entidade</code> não liga com <code>dim_uf</code></h3>
+<div class="box danger">
+  <p>A <code>fato_ocupacao</code> tem uma coluna de estado, mas ela é o estado <strong>da entidade</strong> onde o deputado trabalhou, não o estado que ele representa.</p>
+  <p>São coisas diferentes: um deputado eleito por Alagoas pode ter sido professor em São Paulo. Ligar essa coluna com <code>dim_uf</code> num relatório produz um número que parece certo e não é.</p>
+</div>
+<p>O estado do mandato está em <code>dim_deputado.sg_uf</code>. É esse campo, não <code>fato_ocupacao.sg_uf_entidade</code>, que se liga com <code>fato_cotas.sg_uf</code> numa análise de teto vs. gasto.</p>
+
+<h3>7.7 Cuidado com a aba de metadados do Select values</h3>
+<div class="box danger">
+  <p>No <code>Select values</code>, a aba de metadados só pode listar colunas que existem no fluxo. Um registro apontando para coluna inexistente <strong>derruba o step em execução</strong>, com <code>Unable to find field</code>.</p>
+</div>
+<p>Isso já aconteceu neste projeto: o <code>dim_deputado</code> tinha um registro de metadados para <code>nm_uf</code>, coluna que só existe no <code>dim_uf</code>, provavelmente herdado de uma cópia do pipeline. Foi removido.</p>
+<p>O detalhe traiçoeiro é que a tela não acusa nada: o erro só aparece quando o fluxo roda.</p>
+
+<h3>7.8 Configurações que importam</h3>
+<table>
+  <thead><tr><th>Onde</th><th>Configuração</th><th>Valor</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr><td>TableOutput (todos)</td><td>Cópias</td><td>1</td><td>Com <code>truncate=Y</code>, várias cópias truncariam a tabela cada uma por conta</td></tr>
+    <tr><td>TableOutput (todos)</td><td>Commit</td><td>1000</td><td>Tamanho do lote de insert</td></tr>
+    <tr><td>String operations</td><td>Lower antes de InitCap</td><td>—</td><td>Sem o Lower, texto em caixa alta não muda</td></tr>
+    <tr><td><code>dim_uf</code> caixa 4</td><td>Campo de saída do Janino</td><td><code>nm_uf_sem_acento</code></td><td>Nome diferente do campo de entrada; ver 7.9</td></tr>
+    <tr><td><code>fato_cotas</code> caixa 2</td><td>Máscara de <code>dt_competencia</code></td><td><code>MM/yyyy</code></td><td>Sem dia no texto de origem; o Hop assume dia 1</td></tr>
+    <tr><td><code>fato_despesas</code></td><td>—</td><td>—</td><td>Único pipeline com volume alto</td></tr>
+  </tbody>
+</table>
+
+<h3>7.9 Por que o Janino grava num campo com nome diferente</h3>
+<p>O <code>String operations</code> (caixa 3 do <code>dim_uf</code>) sobrescreve <code>nm_uf</code> no próprio lugar: o transform tem um campo de saída dedicado, e deixá-lo vazio é o sinal para substituir a entrada.</p>
+<p>O <code>Janino</code> (caixa 4) não tem esse mecanismo dedicado. Por isso o resultado vai para <code>nm_uf_sem_acento</code>, um nome novo, e é a caixa de gravação — não o Janino — que decide que esse campo vira a coluna <code>nm_uf</code> na tabela. O mapeamento fica explícito nos "fields" do <code>TableOutput</code>, o mesmo lugar onde <code>fato_despesas</code> já faz algo parecido com o CNPJ formatado (renomeado de <code>cnpj_cpf_formatado</code> para <code>nr_cnpj_cpf_fornecedor</code> na caixa 2, via <code>Select values</code>).</p>
+<div class="box">
+  <p>A vantagem de escolher esse caminho, em vez de tentar fazer o Janino escrever direto em <code>nm_uf</code>, é eliminar qualquer ambiguidade sobre qual valor prevalece quando dois campos do fluxo têm o mesmo nome. O mapeamento explícito na gravação é sempre claro sobre qual campo alimenta qual coluna, não importa quantas caixas de tratamento existam pelo caminho.</p>
+</div>
+
+<h2 id="s8"><span class="num">8</span>Tabelas<span class="aud tech">técnico</span></h2>
+<p>Todas no schema <code>refined</code>, todas em carga full. O DDL fica em <code>02. refined/ddl.sql</code>.</p>
+
+<h3><code>refined.dim_uf</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>sg_uf</code></td><td>text</td><td>PK. Chave da dimensão</td></tr>
+    <tr><td><code>nm_uf</code></td><td>text</td><td>Iniciais maiúsculas e sem acento, padronizado pelo pipeline</td></tr>
+    <tr><td><code>ds_url_bandeira</code></td><td>text</td><td>URL da bandeira (SVG), para uso em relatório. Herdada da raw sem tratamento. Mesmo papel de <code>dim_deputado.ds_url_foto</code></td></tr>
+  </tbody>
+</table>
+
+<h3><code>refined.dim_deputado</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_deputado</code></td><td>text</td><td>PK. Chave da ligação com as fatos</td></tr>
+    <tr><td><code>nm_deputado</code></td><td>text</td><td>Nome parlamentar</td></tr>
+    <tr><td><code>sg_partido</code></td><td>text</td><td></td></tr>
+    <tr><td><code>sg_uf</code></td><td>text</td><td>Liga com <code>dim_uf</code>. Estado do mandato</td></tr>
+    <tr><td><code>ds_url_foto</code></td><td>text</td><td>Foto oficial, para uso em relatório</td></tr>
+  </tbody>
+</table>
+
+<h3><code>refined.fato_cotas</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_cota</code></td><td>bigint</td><td>PK. <strong>Não é estável entre execuções</strong></td></tr>
+    <tr><td><code>sg_uf</code></td><td>text</td><td>Liga com <code>dim_uf</code></td></tr>
+    <tr><td><code>dt_competencia</code></td><td>date</td><td>Primeiro dia do mês de competência</td></tr>
+    <tr><td><code>vl_cota</code></td><td>numeric(14,2)</td><td>Teto permitido, <strong>não</strong> o valor gasto</td></tr>
+  </tbody>
+</table>
+<p><strong>Medida:</strong> <code>vl_cota</code> — mas é um teto, não um gasto. <strong>Sem grão de deputado.</strong></p>
+
+<h3><code>refined.fato_despesas</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_despesa</code></td><td>bigint</td><td>PK. <strong>Não é estável entre execuções</strong></td></tr>
+    <tr><td><code>id_deputado</code></td><td>text</td><td>Liga com <code>dim_deputado</code></td></tr>
+    <tr><td><code>ds_tipo_despesa</code></td><td>text</td><td>Iniciais maiúsculas, padronizado pelo pipeline</td></tr>
+    <tr><td><code>ds_tipo_documento</code></td><td>text</td><td>Nota fiscal, recibo…</td></tr>
+    <tr><td><code>dt_documento</code></td><td>date</td><td>Data de emissão, truncada para o dia</td></tr>
+    <tr><td><code>vl_documento</code></td><td>numeric(14,2)</td><td>Valor bruto. <strong>Pode ser negativo</strong></td></tr>
+    <tr><td><code>ds_url_documento</code></td><td>text</td><td>Nulo em boa parte das linhas</td></tr>
+    <tr><td><code>nm_fornecedor</code></td><td>text</td><td></td></tr>
+    <tr><td><code>nr_cnpj_cpf_fornecedor</code></td><td>text</td><td>Já mascarado</td></tr>
+    <tr><td><code>tp_pessoa</code></td><td>text</td><td><code>PF</code>, <code>PJ</code> ou string vazia</td></tr>
+    <tr><td><code>vl_liquido</code></td><td>numeric(14,2)</td><td>Já descontada a glosa</td></tr>
+    <tr><td><code>vl_glosa</code></td><td>numeric(14,2)</td><td>Valor recusado</td></tr>
+  </tbody>
+</table>
+<p><strong>Medidas:</strong> <code>vl_documento</code>, <code>vl_liquido</code>, <code>vl_glosa</code>.</p>
+
+<h3><code>refined.fato_ocupacao</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_ocupacao</code></td><td>bigint</td><td>PK. <strong>Não é estável entre execuções</strong></td></tr>
+    <tr><td><code>id_deputado</code></td><td>text</td><td>Liga com <code>dim_deputado</code></td></tr>
+    <tr><td><code>ds_titulo</code></td><td>text</td><td>Cargo ou função exercida</td></tr>
+    <tr><td><code>nm_entidade</code></td><td>text</td><td>Onde exerceu</td></tr>
+    <tr><td><code>sg_uf_entidade</code></td><td>text</td><td>Estado <strong>da entidade</strong>. Não liga com <code>dim_uf</code></td></tr>
+    <tr><td><code>nm_pais_entidade</code></td><td>text</td><td></td></tr>
+    <tr><td><code>nr_ano_inicio</code></td><td>integer</td><td></td></tr>
+    <tr><td><code>nr_ano_fim</code></td><td>integer</td><td>Nulo costuma indicar vínculo ativo</td></tr>
+  </tbody>
+</table>
+<p><strong>Sem medidas.</strong> É uma factless fact: responde perguntas de contagem.</p>
+
+<h2 id="s9"><span class="num">9</span>Consultas de exemplo<span class="aud tech">técnico</span></h2>
+<pre><code>-- gasto total por partido
+SELECT d.sg_partido, SUM(f.vl_liquido) AS total
+FROM   refined.fato_despesas f
+JOIN   refined.dim_deputado d ON d.id_deputado = f.id_deputado
+GROUP  BY d.sg_partido
+ORDER  BY total DESC;
+
+-- gasto por estado, com nome por extenso
+SELECT u.nm_uf, SUM(f.vl_liquido) AS total
+FROM   refined.fato_despesas f
+JOIN   refined.dim_deputado d ON d.id_deputado = f.id_deputado
+JOIN   refined.dim_uf       u ON u.sg_uf       = d.sg_uf
+GROUP  BY u.nm_uf
+ORDER  BY total DESC;
+
+-- ocupações mais comuns entre os deputados
+SELECT ds_titulo, COUNT(DISTINCT id_deputado) AS qtd_deputados
+FROM   refined.fato_ocupacao
+GROUP  BY ds_titulo
+ORDER  BY qtd_deputados DESC
+LIMIT  20;
+
+-- deputados sem nenhuma ocupação declarada
+SELECT COUNT(*)
+FROM   refined.dim_deputado d
+LEFT   JOIN refined.fato_ocupacao o ON o.id_deputado = d.id_deputado
+WHERE  o.id_deputado IS NULL;
+
+-- cruzando as duas fatos de deputado: gasto médio por ocupação de origem
+SELECT o.ds_titulo,
+       COUNT(DISTINCT d.id_deputado) AS qtd_deputados,
+       SUM(f.vl_liquido)             AS total_gasto
+FROM   refined.fato_ocupacao o
+JOIN   refined.dim_deputado  d ON d.id_deputado = o.id_deputado
+JOIN   refined.fato_despesas f ON f.id_deputado = d.id_deputado
+GROUP  BY o.ds_titulo
+HAVING COUNT(DISTINCT d.id_deputado) &gt; 5
+ORDER  BY total_gasto DESC;
+
+-- teto vs. gasto, por UF e mês
+SELECT c.sg_uf,
+       c.dt_competencia,
+       c.vl_cota                       AS teto,
+       COALESCE(SUM(f.vl_liquido), 0)  AS gasto
+FROM   refined.fato_cotas    c
+LEFT   JOIN refined.dim_deputado d ON d.sg_uf = c.sg_uf
+LEFT   JOIN refined.fato_despesas f
+       ON  f.id_deputado = d.id_deputado
+       AND date_trunc('month', f.dt_documento) = c.dt_competencia
+GROUP  BY c.sg_uf, c.dt_competencia, c.vl_cota
+ORDER  BY c.sg_uf, c.dt_competencia;</code></pre>
+<div class="box warn">
+  <p>Atenção nas duas últimas: cruzar <code>fato_ocupacao</code> com <code>fato_despesas</code> faz um deputado com várias ocupações aparecer em várias linhas, contando o gasto uma vez por ocupação — é inerente a cruzar duas fatos de granularidades diferentes. Já em teto vs. gasto, o <code>LEFT JOIN</code> por <code>sg_uf</code> (não por <code>id_deputado</code>) soma o gasto de <strong>todos</strong> os deputados daquele estado contra o teto individual da UF: é uma comparação agregada, não per capita. Para totais exatos numa ou noutra, agregue antes numa subconsulta.</p>
+</div>
+
+<h2 id="s10"><span class="num">10</span>Erros comuns<span class="aud tech">técnico</span></h2>
+
+<h4><code>cannot truncate a table referenced in a foreign key constraint</code></h4>
+<p>Alguém declarou uma FK entre as tabelas. Veja a seção 7.1.</p>
+
+<h4><code>Unable to find field [xxx]</code></h4>
+<p>A aba de metadados do <code>Select values</code> referencia coluna que não existe no fluxo. Veja a seção 7.7.</p>
+
+<h4><code>duplicate key value violates unique constraint</code></h4>
+<p>Chave repetida na origem. Numa dimensão, o problema está na camada raw. Em <code>fato_cotas</code>, geralmente é a mesma UF e mês aparecendo duas vezes na planilha.</p>
+
+<h4>Fato com deputado que não existe na dimensão</h4>
+<p>As duas camadas foram carregadas em momentos diferentes, ou a refined rodou isolada sobre uma raw desatualizada. Rode o <code>wkf_projeto_camara</code>.</p>
+
+<h4><code>tp_pessoa</code> com valores fora de PF/PJ</h4>
+<p>Não é erro. Veja a seção 7.5.</p>
+
+<h4>Texto continua em caixa alta depois do String operations</h4>
+<p>O <code>Lower</code> provavelmente foi desligado. Sem ele o <code>InitCap</code> não muda nada. Veja a seção 6.</p>
+
+<h4>Contagem de ocupações maior que o esperado</h4>
+<p>Se as linhas vazias da raw estiverem entrando, o filtro da caixa 1 foi alterado. Veja a seção 5.</p>
+
+<h4><code>fato_cotas.dt_competencia</code> com data errada</h4>
+<p>Confira a máscara <code>MM/yyyy</code> na caixa 2. Se a raw trouxer o texto em outro formato (por exemplo <code>aaaa-mm</code>), a conversão falha ou produz data errada sem lançar erro.</p>
+
+<h4><code>nm_uf</code> ainda com acento</h4>
+<p>A caixa 4 (<code>Janino</code>) do <code>dim_uf</code> grava em <code>nm_uf_sem_acento</code>, não em <code>nm_uf</code>. Se o mapeamento da caixa de gravação for alterado para apontar de volta ao campo original, o acento volta a aparecer sem nenhum erro visível. Veja a seção 7.9.</p>
+
+<h2 id="s11"><span class="num">11</span>Glossário<span class="aud simple">geral</span></h2>
+<table>
+  <thead><tr><th style="width:230px">Termo</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Modelo estrela</strong></td><td>Organização com tabelas fato centrais ligadas a tabelas de dimensão</td></tr>
+    <tr><td><strong>Fato</strong></td><td>Tabela dos eventos, com as medidas numéricas</td></tr>
+    <tr><td><strong>Factless fact</strong></td><td>Fato sem medidas: registra que algo aconteceu, sem valor a somar</td></tr>
+    <tr><td><strong>Dimensão</strong></td><td>Tabela que descreve os eventos: quem, onde, o quê</td></tr>
+    <tr><td><strong>Medida</strong></td><td>Coluna numérica que se soma</td></tr>
+    <tr><td><strong>Granularidade</strong></td><td>O que uma linha da fato representa</td></tr>
+    <tr><td><strong>Chave estrangeira (FK)</strong></td><td>Regra do banco que garante que a fato só aponte para dimensão existente</td></tr>
+    <tr><td><strong>Schema <code>refined</code></strong></td><td>Camada tratada, pronta para consumo</td></tr>
+    <tr><td><strong>Truncate</strong></td><td>Esvaziar a tabela antes de gravar</td></tr>
+    <tr><td><strong>Carga full</strong></td><td>Recarregar tudo, em vez de só as novidades</td></tr>
+    <tr><td><strong>InitCap</strong></td><td>Operação que sobe a inicial de cada palavra</td></tr>
+    <tr><td><strong>Teto</strong></td><td>Valor máximo permitido, distinto do valor efetivamente gasto</td></tr>
+    <tr><td><strong>Normalização NFD</strong></td><td>Técnica que separa letra acentuada em letra base + marca de acento, usada para remover acentuação</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s12"><span class="num">12</span>Arquivos</h2>
+<pre><code>01. Apache Hop - Projeto Câmara/
+├── 01. raw/                       coleta da API e da planilha (documentação própria)
+├── 02. refined/
+│   ├── ddl.sql                    cria as cinco tabelas da refined
+│   ├── dim_uf.hpl
+│   ├── fato_cotas.hpl
+│   ├── dim_deputado.hpl
+│   ├── fato_despesas.hpl
+│   ├── fato_ocupacao.hpl
+│   └── documentacao/
+│       ├── documentacao.md
+│       └── documentacao.html
+├── 03.workflows/
+│   ├── wkf_projeto_camara.hwf     ← carga completa; execute por aqui
+│   ├── wkf_raw_camara.hwf
+│   └── wkf_refined_camara.hwf
+└── metadata/</code></pre>
+
+<footer>
+  <p>Fonte dos dados: API de Dados Abertos da Câmara dos Deputados — <a href="https://dadosabertos.camara.leg.br/swagger/api.html">dadosabertos.camara.leg.br</a>, e planilha de teto de cota mantida à parte. Coleta detalhada na documentação da camada raw.</p>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

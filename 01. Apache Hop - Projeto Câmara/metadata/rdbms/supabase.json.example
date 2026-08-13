@@ -1,0 +1,29 @@
+{
+  "virtualPath": "",
+  "rdbms": {
+    "POSTGRESQL": {
+      "databaseName": "${p_banco}",
+      "pluginId": "POSTGRESQL",
+      "accessType": 0,
+      "hostname": "${p_servidor_banco}",
+      "password": "",
+      "pluginName": "PostgreSQL",
+      "port": "${p_porta_servidor}",
+      "attributes": {
+        "SUPPORTS_TIMESTAMP_DATA_TYPE": "Y",
+        "QUOTE_ALL_FIELDS": "N",
+        "EXTRA_OPTION_POSTGRESQL.preparedStatementCacheQueries": "0",
+        "SUPPORTS_BOOLEAN_DATA_TYPE": "Y",
+        "FORCE_IDENTIFIERS_TO_LOWERCASE": "N",
+        "PRESERVE_RESERVED_WORD_CASE": "Y",
+        "SQL_CONNECT": "",
+        "EXTRA_OPTION_POSTGRESQL.prepareThreshold": "0",
+        "FORCE_IDENTIFIERS_TO_UPPERCASE": "N",
+        "PREFERRED_SCHEMA_NAME": ""
+      },
+      "manualUrl": "",
+      "username": "${p_user}"
+    }
+  },
+  "name": "supabase"
+}

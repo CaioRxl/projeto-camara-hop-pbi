@@ -1,0 +1,1319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>get_despesas</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description>Carrega as despesas da cota parlamentar em raw.despesas.</description>
+    <extended_description>Para cada deputado da legislatura corrente, busca as notas e recibos
+apresentados para reembolso.
+
+O problema a resolver e paginacao. A API entrega as despesas em paginas de
+tamanho limitado e nao informa quantas paginas existem. O unico jeito de
+descobrir e pedir a primeira e ler o rodape da resposta, onde vem o endereco
+da ultima pagina.
+
+Dai as duas voltas do fluxo:
+
+  caixas 1 a 6    sonda. Uma chamada por deputado so para contar as paginas.
+                  Os dados que vem nessa chamada sao descartados.
+  caixas 7 a 13   coleta. A linha de cada deputado e duplicada uma vez por
+                  pagina, e cada linha busca a sua.
+
+Por isso existem duas chamadas HTTP aqui (caixas 4 e 9).
+
+E o passo mais demorado do projeto, entao ha tres pontos que escrevem
+andamento no log: total de deputados, total de paginas e progresso a cada
+250 paginas baixadas.
+
+Cuidado ao mexer na caixa 5: a ordem dos itens do rodape muda conforme a
+pagina (na ultima nao existe "next" e aparece "previous"). A busca e pelo
+nome do atalho, nunca pela posicao. Trocar por posicao nao da erro, so passa
+a contar paginas erradas.
+
+Carga full. A tabela e truncada antes de gravar.</extended_description>
+    <pipeline_version/>
+    <pipeline_type>Normal</pipeline_type>
+    <pipeline_status>0</pipeline_status>
+    <parameters>
+      <parameter>
+        <name>P_INTERVALO_LOG_PAGINAS</name>
+        <default_value>250</default_value>
+        <description>De quantas em quantas paginas baixadas o log reporta andamento.</description>
+      </parameter>
+      <parameter>
+        <name>P_ITENS_POR_PAGINA</name>
+        <default_value>100</default_value>
+        <description>Registros por pagina. 100 e o maximo aceito pela API; reduzir so aumenta a quantidade de chamadas.</description>
+      </parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>-</created_user>
+    <created_date>2026/08/06 21:54:34.243</created_date>
+    <modified_user>-</modified_user>
+    <modified_date>2026/08/07 18:00:00.000</modified_date>
+  </info>
+  <notepads>
+    <notepad>
+      <backgroundcolorblue>251</backgroundcolorblue>
+      <backgroundcolorgreen>232</backgroundcolorgreen>
+      <backgroundcolorred>201</backgroundcolorred>
+      <bordercolorblue>90</bordercolorblue>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorred>14</bordercolorred>
+      <fontbold>N</fontbold>
+      <fontcolorblue>90</fontcolorblue>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorred>14</fontcolorred>
+      <fontitalic>N</fontitalic>
+      <fontname>Segoe UI</fontname>
+      <fontsize>9</fontsize>
+      <height>135</height>
+      <xloc>432</xloc>
+      <yloc>16</yloc>
+      <note>DESPESAS DA COTA PARLAMENTAR
+
+A API entrega em paginas e nao diz quantas existem, entao o fluxo faz duas voltas:
+
+  caixas 1 a 6    descobrir quantas paginas cada deputado tem
+  caixas 7 a 13   baixar essas paginas e gravar
+
+As caixas cinza fora da fila principal so escrevem andamento no log.</note>
+      <width>760</width>
+    </notepad>
+    <notepad>
+      <backgroundcolorblue>226</backgroundcolorblue>
+      <backgroundcolorgreen>243</backgroundcolorgreen>
+      <backgroundcolorred>252</backgroundcolorred>
+      <bordercolorblue>90</bordercolorblue>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorred>14</bordercolorred>
+      <fontbold>N</fontbold>
+      <fontcolorblue>90</fontcolorblue>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorred>14</fontcolorred>
+      <fontitalic>N</fontitalic>
+      <fontname>Segoe UI</fontname>
+      <fontsize>9</fontsize>
+      <height>42</height>
+      <xloc>576</xloc>
+      <yloc>288</yloc>
+      <note>SONDA: uma chamada por deputado, so para ler o rodape
+e descobrir o numero da ultima pagina.</note>
+      <width>440</width>
+    </notepad>
+    <notepad>
+      <backgroundcolorblue>226</backgroundcolorblue>
+      <backgroundcolorgreen>243</backgroundcolorgreen>
+      <backgroundcolorred>252</backgroundcolorred>
+      <bordercolorblue>90</bordercolorblue>
+      <bordercolorgreen>58</bordercolorgreen>
+      <bordercolorred>14</bordercolorred>
+      <fontbold>N</fontbold>
+      <fontcolorblue>90</fontcolorblue>
+      <fontcolorgreen>58</fontcolorgreen>
+      <fontcolorred>14</fontcolorred>
+      <fontitalic>N</fontitalic>
+      <fontname>Segoe UI</fontname>
+      <fontsize>9</fontsize>
+      <height>42</height>
+      <xloc>576</xloc>
+      <yloc>688</yloc>
+      <note>COLETA: uma chamada por pagina, com 4 copias em paralelo.
+Nao passe de 8 copias ou a API comeca a recusar.</note>
+      <width>440</width>
+    </notepad>
+  </notepads>
+  <order>
+    <hop>
+      <from>1. Ler os deputados</from>
+      <to>2. Pegar endereço e tamanho de página</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>1. Ler os deputados</from>
+      <to>Contar deputados</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Contar deputados</from>
+      <to>Log: total de deputados</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>2. Pegar endereço e tamanho de página</from>
+      <to>3. Montar endereço de teste</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>3. Montar endereço de teste</from>
+      <to>4. Perguntar quantas páginas existem</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>4. Perguntar quantas páginas existem</from>
+      <to>5. Achar o link da última página</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>5. Achar o link da última página</from>
+      <to>6. Contar as páginas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>6. Contar as páginas</from>
+      <to>7. Criar uma linha por página</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>7. Criar uma linha por página</from>
+      <to>8. Montar o endereço de cada página</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>7. Criar uma linha por página</from>
+      <to>Contar páginas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Contar páginas</from>
+      <to>Log: total de páginas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>8. Montar o endereço de cada página</from>
+      <to>9. Baixar as despesas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>9. Baixar as despesas</from>
+      <to>10. Abrir a resposta</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>10. Abrir a resposta</from>
+      <to>Marcar o intervalo de log</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Marcar o intervalo de log</from>
+      <to>Separar os marcos</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Separar os marcos</from>
+      <to>Log: páginas baixadas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Separar os marcos</from>
+      <to>11. Separar uma despesa por linha</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Log: páginas baixadas</from>
+      <to>11. Separar uma despesa por linha</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>11. Separar uma despesa por linha</from>
+      <to>12. Renomear as colunas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>12. Renomear as colunas</from>
+      <to>13. Gravar em raw.despesas</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>1. Ler os deputados</name>
+    <type>TableInput</type>
+    <description>Lê do banco os deputados a consultar, junto com a legislatura.
+
+A legislatura sai da própria consulta, via MAX sobre raw.deputados, em vez de vir de uma variável. Isso mantém o pipeline autocontido (roda sozinho no Hop Gui) e evita que a tela tente resolver ${...} contra o banco ao desenhar o diagrama.
+
+O get_deputados precisa ter rodado antes, senão isto lê uma lista desatualizada.
+
+Está em modo Copiar porque alimenta a fila principal e o contador de log ao mesmo tempo.</description>
+    <distribute>N</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>supabase</connection>
+    <execute_each_row>N</execute_each_row>
+    <limit>0</limit>
+    <sql>SELECT DISTINCT
+       id_deputado::text    AS id_deputado,
+       id_legislatura::text AS id_legislatura
+FROM   raw.deputados
+WHERE  id_legislatura = (SELECT MAX(id_legislatura) FROM raw.deputados)
+ORDER  BY 1
+</sql>
+    <variables_active>Y</variables_active>
+    <attributes/>
+    <GUI>
+      <xloc>112</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>10. Abrir a resposta</name>
+    <type>JsonInput</type>
+    <description>Isola a lista de despesas da resposta. O rodapé de paginação já cumpriu o papel dele na caixa 5.
+
+Também numera as páginas conforme chegam, no campo nr_pagina_lida. Esse contador é o que alimenta o log de andamento.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>Y</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field>nr_pagina_lida</rownum_field>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>dados</name>
+        <path>$.dados</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>result</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>496</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>11. Separar uma despesa por linha</name>
+    <type>JsonInput</type>
+    <description>Quebra o grupo de despesas em linhas e já define o tipo de cada coluna.
+
+"Default path leaf to null" precisa ficar LIGADO. Boa parte das despesas não tem link de nota fiscal, e com a opção desligada essas ausências não geram espaço em branco: as colunas encurtam e passam a ficar desalinhadas entre si. A nota de uma linha apareceria colada no valor de outra. Não dá erro, produz dado errado.
+
+Nos dados: valores negativos existem e são legítimos (estornos de passagem aérea). Não filtre por "maior que zero" achando que é sujeira.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>ano</name>
+        <path>$.*.ano</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>mes</name>
+        <path>$.*.mes</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>tipoDespesa</name>
+        <path>$.*.tipoDespesa</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>codDocumento</name>
+        <path>$.*.codDocumento</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>tipoDocumento</name>
+        <path>$.*.tipoDocumento</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>codTipoDocumento</name>
+        <path>$.*.codTipoDocumento</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>dataDocumento</name>
+        <path>$.*.dataDocumento</path>
+        <type>Date</type>
+        <format>yyyy-MM-dd'T'HH:mm:ss</format>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>numDocumento</name>
+        <path>$.*.numDocumento</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>valorDocumento</name>
+        <path>$.*.valorDocumento</path>
+        <type>BigNumber</type>
+        <format/>
+        <currency/>
+        <decimal>.</decimal>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>urlDocumento</name>
+        <path>$.*.urlDocumento</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nomeFornecedor</name>
+        <path>$.*.nomeFornecedor</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>cnpjCpfFornecedor</name>
+        <path>$.*.cnpjCpfFornecedor</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>valorLiquido</name>
+        <path>$.*.valorLiquido</path>
+        <type>BigNumber</type>
+        <format/>
+        <currency/>
+        <decimal>.</decimal>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>valorGlosa</name>
+        <path>$.*.valorGlosa</path>
+        <type>BigNumber</type>
+        <format/>
+        <currency/>
+        <decimal>.</decimal>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>numRessarcimento</name>
+        <path>$.*.numRessarcimento</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>codLote</name>
+        <path>$.*.codLote</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>parcela</name>
+        <path>$.*.parcela</path>
+        <type>Integer</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>dados</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>1088</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>12. Renomear as colunas</name>
+    <type>SelectValues</type>
+    <description>Aplica os nomes usados no banco e joga fora tudo que era apoio: endereços montados, contadores de página, marcador de log e configurações.
+
+Prefixos do projeto: id_ identificador, cd_ código, nr_ número, dt_ data, ds_ texto livre, nm_ nome, vl_ valor.
+
+A coluna id_deputado precisa continuar aqui. A resposta da API não repete o código do deputado dentro de cada despesa: ele vem sendo carregado desde a caixa 1. Removendo daqui, não há como saber de quem é cada gasto.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>id_deputado</name>
+        <rename>id_deputado</rename>
+      </field>
+      <field>
+        <name>ano</name>
+        <rename>nr_ano</rename>
+      </field>
+      <field>
+        <name>mes</name>
+        <rename>nr_mes</rename>
+      </field>
+      <field>
+        <name>tipoDespesa</name>
+        <rename>ds_tipo_despesa</rename>
+      </field>
+      <field>
+        <name>codDocumento</name>
+        <rename>cd_documento</rename>
+      </field>
+      <field>
+        <name>tipoDocumento</name>
+        <rename>ds_tipo_documento</rename>
+      </field>
+      <field>
+        <name>codTipoDocumento</name>
+        <rename>cd_tipo_documento</rename>
+      </field>
+      <field>
+        <name>dataDocumento</name>
+        <rename>dt_documento</rename>
+      </field>
+      <field>
+        <name>numDocumento</name>
+        <rename>nr_documento</rename>
+      </field>
+      <field>
+        <name>valorDocumento</name>
+        <rename>vl_documento</rename>
+      </field>
+      <field>
+        <name>urlDocumento</name>
+        <rename>ds_url_documento</rename>
+      </field>
+      <field>
+        <name>nomeFornecedor</name>
+        <rename>nm_fornecedor</rename>
+      </field>
+      <field>
+        <name>cnpjCpfFornecedor</name>
+        <rename>nr_cnpj_cpf_fornecedor</rename>
+      </field>
+      <field>
+        <name>valorLiquido</name>
+        <rename>vl_liquido</rename>
+      </field>
+      <field>
+        <name>valorGlosa</name>
+        <rename>vl_glosa</rename>
+      </field>
+      <field>
+        <name>numRessarcimento</name>
+        <rename>nr_ressarcimento</rename>
+      </field>
+      <field>
+        <name>codLote</name>
+        <rename>cd_lote</rename>
+      </field>
+      <field>
+        <name>parcela</name>
+        <rename>nr_parcela</rename>
+      </field>
+      <select_unspecified>N</select_unspecified>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>1312</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>13. Gravar em raw.despesas</name>
+    <type>TableOutput</type>
+    <description>Grava em raw.despesas. A tabela é truncada antes, então cada execução substitui o conteúdo.
+
+Precisa ficar com UMA cópia: com várias, cada uma truncaria a tabela por conta própria e apagaria o que as outras já gravaram.
+
+As linhas vão em lotes de mil. Se a gravação estiver lenta, esse é o primeiro número a aumentar.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <commit>1000</commit>
+    <connection>supabase</connection>
+    <fields>
+      <field>
+        <column_name>id_deputado</column_name>
+        <stream_name>id_deputado</stream_name>
+      </field>
+      <field>
+        <column_name>nr_ano</column_name>
+        <stream_name>nr_ano</stream_name>
+      </field>
+      <field>
+        <column_name>nr_mes</column_name>
+        <stream_name>nr_mes</stream_name>
+      </field>
+      <field>
+        <column_name>ds_tipo_despesa</column_name>
+        <stream_name>ds_tipo_despesa</stream_name>
+      </field>
+      <field>
+        <column_name>cd_documento</column_name>
+        <stream_name>cd_documento</stream_name>
+      </field>
+      <field>
+        <column_name>ds_tipo_documento</column_name>
+        <stream_name>ds_tipo_documento</stream_name>
+      </field>
+      <field>
+        <column_name>cd_tipo_documento</column_name>
+        <stream_name>cd_tipo_documento</stream_name>
+      </field>
+      <field>
+        <column_name>dt_documento</column_name>
+        <stream_name>dt_documento</stream_name>
+      </field>
+      <field>
+        <column_name>nr_documento</column_name>
+        <stream_name>nr_documento</stream_name>
+      </field>
+      <field>
+        <column_name>vl_documento</column_name>
+        <stream_name>vl_documento</stream_name>
+      </field>
+      <field>
+        <column_name>ds_url_documento</column_name>
+        <stream_name>ds_url_documento</stream_name>
+      </field>
+      <field>
+        <column_name>nm_fornecedor</column_name>
+        <stream_name>nm_fornecedor</stream_name>
+      </field>
+      <field>
+        <column_name>nr_cnpj_cpf_fornecedor</column_name>
+        <stream_name>nr_cnpj_cpf_fornecedor</stream_name>
+      </field>
+      <field>
+        <column_name>vl_liquido</column_name>
+        <stream_name>vl_liquido</stream_name>
+      </field>
+      <field>
+        <column_name>vl_glosa</column_name>
+        <stream_name>vl_glosa</stream_name>
+      </field>
+      <field>
+        <column_name>nr_ressarcimento</column_name>
+        <stream_name>nr_ressarcimento</stream_name>
+      </field>
+      <field>
+        <column_name>cd_lote</column_name>
+        <stream_name>cd_lote</stream_name>
+      </field>
+      <field>
+        <column_name>nr_parcela</column_name>
+        <stream_name>nr_parcela</stream_name>
+      </field>
+    </fields>
+    <ignore_errors>N</ignore_errors>
+    <only_when_have_rows>N</only_when_have_rows>
+    <partitioning_daily>N</partitioning_daily>
+    <partitioning_enabled>N</partitioning_enabled>
+    <partitioning_monthly>Y</partitioning_monthly>
+    <return_keys>N</return_keys>
+    <schema>raw</schema>
+    <specify_fields>Y</specify_fields>
+    <table>despesas</table>
+    <tablename_in_field>N</tablename_in_field>
+    <tablename_in_table>Y</tablename_in_table>
+    <truncate>Y</truncate>
+    <use_batch>Y</use_batch>
+    <attributes/>
+    <GUI>
+      <xloc>1504</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>2. Pegar endereço e tamanho de página</name>
+    <type>GetVariable</type>
+    <description>Anexa a cada linha o endereço base da API, o tamanho de página e o intervalo de log.
+
+As caixas que montam endereços e calculam fórmulas só trabalham com colunas, não com configuração do projeto. Esta caixa faz a ponte.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <length>-1</length>
+        <name>V_URL_BASE</name>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <type>String</type>
+        <variable>${P_URL_BASE_DADOS_ABERTOS_CAMARA}</variable>
+      </field>
+      <field>
+        <length>-1</length>
+        <name>V_ITENS</name>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <type>String</type>
+        <variable>${P_ITENS_POR_PAGINA}</variable>
+      </field>
+      <field>
+        <length>-1</length>
+        <name>V_INTERVALO_LOG</name>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <type>String</type>
+        <variable>${P_INTERVALO_LOG_PAGINAS}</variable>
+      </field>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>352</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>3. Montar endereço de teste</name>
+    <type>Janino</type>
+    <description>Monta a URL da primeira página de despesas de cada deputado.
+
+Este endereço não coleta nada: serve só como sonda para a caixa 4 descobrir quantas páginas existem.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <formula>
+      <field_name>url_sonda</field_name>
+      <formula_string>V_URL_BASE + "/deputados/" + id_deputado + "/despesas?idLegislatura=" + id_legislatura + "&amp;itens=" + V_ITENS + "&amp;pagina=1"</formula_string>
+      <value_type>String</value_type>
+      <value_length>-1</value_length>
+      <value_precision>-1</value_precision>
+      <replace_field/>
+    </formula>
+    <attributes/>
+    <GUI>
+      <xloc>592</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>4. Perguntar quantas páginas existem</name>
+    <type>Rest</type>
+    <description>Uma chamada por deputado, só para ler o rodapé da resposta.
+
+As despesas que vêm nesta chamada são descartadas. Interessa apenas o endereço da última página, de onde sai a contagem.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>2</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <applicationType>JSON</applicationType>
+    <connectionTimeout>15000</connectionTimeout>
+    <dynamicMethod>N</dynamicMethod>
+    <headers>
+</headers>
+    <ignoreSsl>N</ignoreSsl>
+    <matrixParameters>
+</matrixParameters>
+    <method>GET</method>
+    <parameters>
+</parameters>
+    <preemptive>N</preemptive>
+    <readTimeout>30000</readTimeout>
+    <result>
+      <name>result_sonda</name>
+    </result>
+    <trustStorePassword>Encrypted </trustStorePassword>
+    <urlField>url_sonda</urlField>
+    <urlInField>Y</urlInField>
+    <attributes/>
+    <GUI>
+      <xloc>832</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>5. Achar o link da última página</name>
+    <type>JsonInput</type>
+    <description>Procura no rodapé o endereço da última página.
+
+O rodapé é uma lista de atalhos (primeira, próxima, última, anterior) e a ORDEM DELES MUDA conforme a página: na última, "próxima" some e aparece "anterior". Por isso a busca é pelo nome do atalho (rel = 'last'), nunca pela posição.
+
+Trocar isso por posição fixa não gera erro. Só passa a contar páginas erradas, e despesas somem sem aviso.
+
+Deputado sem despesa não tem atalho "última" e o campo sai vazio. A caixa 6 trata.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>url_last</name>
+        <path>$.links[?(@.rel=='last')].href</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>result_sonda</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>1088</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>6. Contar as páginas</name>
+    <type>Janino</type>
+    <description>Recorta o número da última página de dentro do endereço achado na caixa 5.
+
+Subtrai 1 porque a caixa seguinte mantém a linha original e cria N cópias adicionais: para terminar com 7 linhas é preciso pedir 6 cópias.
+
+Deputado sem despesa cai no zero: nenhuma cópia é criada, a linha original segue sozinha, a chamada volta vazia e nada é gravado.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <formula>
+      <field_name>nr_clones</field_name>
+      <formula_string>url_last == null ? 0 : Integer.parseInt(url_last.replaceAll(".*pagina=(\\d+).*", "$1")) - 1</formula_string>
+      <value_type>Integer</value_type>
+      <value_length>-1</value_length>
+      <value_precision>-1</value_precision>
+      <replace_field/>
+    </formula>
+    <attributes/>
+    <GUI>
+      <xloc>1296</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>7. Criar uma linha por página</name>
+    <type>CloneRow</type>
+    <description>Duplica cada deputado uma vez por página que ele tem.
+
+Caixa central do fluxo: entra uma linha por deputado, sai uma linha por página, numeradas a partir de zero.
+
+Existe porque não há laço dentro de um pipeline do Hop. A repetição vira linhas, e cada linha passa a ser uma tarefa independente, que ainda pode rodar em paralelo.
+
+Está em modo Copiar porque alimenta a fila principal e o contador de log.</description>
+    <distribute>N</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <addcloneflag>N</addcloneflag>
+    <addclonenum>Y</addclonenum>
+    <clonenumfield>nr_clone</clonenumfield>
+    <nrclonefield>nr_clones</nrclonefield>
+    <nrcloneinfield>Y</nrcloneinfield>
+    <nrclones>0</nrclones>
+    <attributes/>
+    <GUI>
+      <xloc>1504</xloc>
+      <yloc>192</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>8. Montar o endereço de cada página</name>
+    <type>Janino</type>
+    <description>Monta o endereço definitivo de cada página. Igual ao da caixa 3, mas com o número da própria linha.
+
+A numeração das cópias começa em zero e as páginas em um, daí o mais um.
+
+O endereço é remontado a partir das colunas originais em vez de editar o da caixa 3: não depende de achar e substituir pedaço de texto.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <formula>
+      <field_name>url_pagina</field_name>
+      <formula_string>V_URL_BASE + "/deputados/" + id_deputado + "/despesas?idLegislatura=" + id_legislatura + "&amp;itens=" + V_ITENS + "&amp;pagina=" + (nr_clone.longValue() + 1)</formula_string>
+      <value_type>String</value_type>
+      <value_length>-1</value_length>
+      <value_precision>-1</value_precision>
+      <replace_field/>
+    </formula>
+    <attributes/>
+    <GUI>
+      <xloc>112</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>9. Baixar as despesas</name>
+    <type>Rest</type>
+    <description>A coleta de verdade: uma chamada por página. É a etapa mais demorada do projeto.
+
+Roda com 4 cópias em paralelo. Dá para aumentar, mas não passe de 8: acima disso a API começa a recusar por excesso de acessos e despesas somem sem aviso.
+
+Se estiver lento, o gargalo provavelmente é a gravação (caixa 13), não aqui.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>4</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <applicationType>JSON</applicationType>
+    <connectionTimeout>15000</connectionTimeout>
+    <dynamicMethod>N</dynamicMethod>
+    <headers>
+</headers>
+    <ignoreSsl>N</ignoreSsl>
+    <matrixParameters>
+</matrixParameters>
+    <method>GET</method>
+    <parameters>
+</parameters>
+    <preemptive>N</preemptive>
+    <readTimeout>30000</readTimeout>
+    <result>
+      <name>result</name>
+    </result>
+    <trustStorePassword>Encrypted </trustStorePassword>
+    <urlField>url_pagina</urlField>
+    <urlInField>Y</urlInField>
+    <attributes/>
+    <GUI>
+      <xloc>336</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Contar deputados</name>
+    <type>MemoryGroupBy</type>
+    <description>Conta as linhas que saíram da consulta. Ramo lateral, não interfere na fila principal.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <aggregate>qtd_deputados</aggregate>
+        <subject>id_deputado</subject>
+        <type>COUNT_ALL</type>
+      </field>
+    </fields>
+    <give_back_row>N</give_back_row>
+    <group>
+</group>
+    <attributes/>
+    <GUI>
+      <xloc>112</xloc>
+      <yloc>352</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Contar páginas</name>
+    <type>MemoryGroupBy</type>
+    <description>Conta quantas páginas serão baixadas no total. Ramo lateral, não interfere na fila principal.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <aggregate>qtd_paginas</aggregate>
+        <subject>id_deputado</subject>
+        <type>COUNT_ALL</type>
+      </field>
+    </fields>
+    <give_back_row>N</give_back_row>
+    <group>
+</group>
+    <attributes/>
+    <GUI>
+      <xloc>1504</xloc>
+      <yloc>352</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Log: páginas baixadas</name>
+    <type>WriteToLog</type>
+    <description>Escreve no log quantas páginas já foram baixadas, no intervalo definido pelo parâmetro P_INTERVALO_LOG_PAGINAS.
+
+Compare esse número com o "Paginas a baixar" do início da execução para saber quanto falta.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <displayHeader>N</displayHeader>
+    <fields>
+      <field>
+        <name>nr_pagina_lida</name>
+      </field>
+    </fields>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <loglevel>Basic</loglevel>
+    <logmessage>Paginas baixadas ate agora</logmessage>
+    <attributes/>
+    <GUI>
+      <xloc>848</xloc>
+      <yloc>448</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Log: total de deputados</name>
+    <type>WriteToLog</type>
+    <description>Escreve no log quantos deputados serão consultados. Aparece logo no início da execução.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <displayHeader>N</displayHeader>
+    <fields>
+      <field>
+        <name>qtd_deputados</name>
+      </field>
+    </fields>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <loglevel>Basic</loglevel>
+    <logmessage>Deputados a consultar</logmessage>
+    <attributes/>
+    <GUI>
+      <xloc>304</xloc>
+      <yloc>352</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Log: total de páginas</name>
+    <type>WriteToLog</type>
+    <description>Escreve no log quantas páginas serão baixadas. Aparece quando a coleta começa, e é a melhor referência para estimar quanto falta.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <displayHeader>N</displayHeader>
+    <fields>
+      <field>
+        <name>qtd_paginas</name>
+      </field>
+    </fields>
+    <limitRows>N</limitRows>
+    <limitRowsNumber>0</limitRowsNumber>
+    <loglevel>Basic</loglevel>
+    <logmessage>Paginas a baixar</logmessage>
+    <attributes/>
+    <GUI>
+      <xloc>1344</xloc>
+      <yloc>352</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Marcar o intervalo de log</name>
+    <type>Janino</type>
+    <description>Calcula o resto da divisão do número da página pelo intervalo de log.
+
+Resto zero significa que aquela página é um marco e merece uma linha no log. Todas as outras seguem direto.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <formula>
+      <field_name>marco_log</field_name>
+      <formula_string>nr_pagina_lida.longValue() % Integer.parseInt(V_INTERVALO_LOG)</formula_string>
+      <value_type>Integer</value_type>
+      <value_length>-1</value_length>
+      <value_precision>-1</value_precision>
+      <replace_field/>
+    </formula>
+    <attributes/>
+    <GUI>
+      <xloc>672</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Separar os marcos</name>
+    <type>FilterRows</type>
+    <description>Manda as páginas de marco para o log e todo o resto direto para a caixa 11.
+
+Nada é descartado: os dois caminhos voltam a se juntar na caixa 11.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <compare>
+      <condition>
+        <conditions>
+</conditions>
+        <function>=</function>
+        <leftvalue>marco_log</leftvalue>
+        <negated>N</negated>
+        <operator>-</operator>
+        <value>
+          <isnull>N</isnull>
+          <length>-1</length>
+          <name>constante</name>
+          <precision>0</precision>
+          <text>0</text>
+          <type>Integer</type>
+        </value>
+      </condition>
+    </compare>
+    <send_false_to>11. Separar uma despesa por linha</send_false_to>
+    <send_true_to>Log: páginas baixadas</send_true_to>
+    <attributes/>
+    <GUI>
+      <xloc>848</xloc>
+      <yloc>592</yloc>
+    </GUI>
+  </transform>
+  <transform_error_handling>
+  </transform_error_handling>
+  <attributes/>
+</pipeline>

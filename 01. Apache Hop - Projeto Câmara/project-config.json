@@ -1,0 +1,18 @@
+{
+  "metadataBaseFolder" : "${PROJECT_HOME}/metadata",
+  "unitTestsBasePath" : "${PROJECT_HOME}",
+  "dataSetsCsvFolder" : "${PROJECT_HOME}/datasets",
+  "enforcingExecutionInHome" : true,
+  "config" : {
+    "variables" : [ {
+      "name" : "P_URL_BASE_DADOS_ABERTOS_CAMARA",
+      "value" : "https://dadosabertos.camara.leg.br/api/v2"
+    }, {
+      "name" : "P_ARQUIVO_COTAS",
+      "value" : "C:\\Users\\caior\\Desktop\\Plataforma Xperiun\\Evento - Pré MBA\\01. Apache Hop - Projeto Câmara\\01. raw\\cotascota_parlamentar_ceap_2023_2026.xlsx"
+    }, {
+      "name" : "P_URL_BANDEIRAS_ESTADOS",
+      "value" : "https://apis.codante.io/bandeiras-dos-estados"
+    } ]
+  }
+}

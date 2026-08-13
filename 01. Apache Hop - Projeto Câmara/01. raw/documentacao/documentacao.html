@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeto Câmara — camada raw</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#2563EB; --brand-light:#60A5FA; --brand-dark:#1E40AF;
+    --bg:#F8FAFC; --border:#E2E8F0; --ink:#0F172A;
+    --muted:#64748B; --muted-2:#94A3B8;
+    --grad:linear-gradient(165deg,#1E40AF 0%,#2563EB 50%,#60A5FA 100%);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Space Grotesk",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{display:flex;max-width:1360px;margin:0 auto}
+  aside{width:258px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:#fff;padding:26px 0}
+  main{flex:1;min-width:0;padding:0 54px 110px}
+
+  .side-brand{padding:0 24px 18px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .side-brand h1{font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .side-brand p{font-size:11px;color:var(--muted-2);margin-top:2px}
+  nav a{display:block;padding:7px 24px;font-size:13px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;transition:.15s}
+  nav a:hover{color:var(--brand);background:#F1F5F9;border-left-color:var(--brand-light)}
+  nav .grp{padding:15px 24px 5px;font-size:9.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted-2)}
+
+  .hero{background:var(--grad);color:#fff;margin:0 -54px 40px;padding:52px 54px 44px;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;top:-90px;right:-70px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.07)}
+  .hero .tag{font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.65)}
+  .hero h1{font-size:38px;font-weight:700;letter-spacing:-.8px;line-height:1.1;margin:12px 0 14px}
+  .hero p{font-size:15.5px;color:rgba(255,255,255,.88);max-width:700px;position:relative;z-index:2}
+
+  h2{font-size:25px;font-weight:700;letter-spacing:-.4px;margin:56px 0 8px;padding-top:12px;scroll-margin-top:20px}
+  h2 .num{color:var(--brand);font-weight:400;margin-right:10px}
+  h3{font-size:16.5px;font-weight:600;letter-spacing:-.2px;margin:32px 0 10px}
+  h4{font-size:14px;font-weight:600;margin:20px 0 4px}
+  p{margin:12px 0;font-size:14.5px}
+  ul,ol{margin:12px 0 12px 22px;font-size:14.5px}
+  li{margin:6px 0}
+  a{color:var(--brand)}
+  .lead{font-size:16px;color:var(--muted)}
+  strong{font-weight:600}
+
+  code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;background:#EEF2F7;color:#1E40AF;padding:2px 6px;border-radius:4px}
+  pre{background:var(--ink);color:#E2E8F0;padding:18px 20px;border-radius:10px;overflow-x:auto;margin:16px 0;font-size:12.5px;line-height:1.6}
+  pre code{background:none;color:inherit;padding:0}
+  .diagram{background:#fff;border:1px solid var(--border);color:var(--ink)}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:13.5px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  th{background:#F1F5F9;text-align:left;padding:10px 14px;font-weight:600;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+  td{padding:10px 14px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  tbody tr:nth-child(even){background:#FAFCFE}
+  td code{font-size:12px}
+
+  .box{border-left:3px solid var(--brand);background:#fff;border-radius:0 8px 8px 0;padding:15px 20px;margin:18px 0;border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .box p:first-child{margin-top:0}.box p:last-child{margin-bottom:0}
+  .box .t{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--brand);margin-bottom:5px}
+  .box.warn{border-left-color:#D97706}.box.warn .t{color:#B45309}
+  .box.danger{border-left-color:#DC2626}.box.danger .t{color:#B91C1C}
+
+  .aud{display:inline-block;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;padding:3px 10px;border-radius:20px;vertical-align:middle;margin-left:10px}
+  .aud.simple{background:#DCFCE7;color:#166534}
+  .aud.tech{background:#E0E7FF;color:#3730A3}
+
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted-2)}
+
+  @media(max-width:980px){
+    aside{display:none}
+    main{padding:0 22px 80px}
+    .hero{margin:0 -22px 32px;padding:38px 22px}
+    .hero h1{font-size:28px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<aside>
+  <div class="side-brand">
+    <h1>Projeto Câmara</h1>
+    <p>Apache Hop · camada raw</p>
+  </div>
+  <nav>
+    <div class="grp">Geral</div>
+    <a href="#s1">1. O que a camada faz</a>
+    <a href="#s2">2. Como executar</a>
+    <a href="#s3">3. Visão geral</a>
+    <a href="#s4">4. get_uf</a>
+    <a href="#s5">5. get_cotas</a>
+    <a href="#s6">6. get_deputados</a>
+    <a href="#s7">7. get_despesas</a>
+    <a href="#s8">8. get_ocupacoes</a>
+    <div class="grp">Técnico</div>
+    <a href="#s9">9. Detalhes técnicos</a>
+    <a href="#s10">10. Tabelas</a>
+    <a href="#s11">11. Erros comuns</a>
+    <div class="grp">Apoio</div>
+    <a href="#s12">12. Glossário</a>
+    <a href="#s13">13. Arquivos</a>
+  </nav>
+</aside>
+
+<main>
+
+<div class="hero">
+  <span class="tag">Apache Hop · Dados Abertos</span>
+  <h1>Camada raw</h1>
+  <p>Coleta dos dados abertos da Câmara dos Deputados: estados, teto da cota por UF, deputados, despesas da cota parlamentar e ocupações profissionais.</p>
+</div>
+
+<div class="box">
+  <p>As seções <strong>1 a 8</strong> explicam o que a camada faz e não exigem conhecimento de Hop. Da <strong>9 em diante</strong> o texto assume familiaridade com a ferramenta e com SQL.</p>
+  <p>Os volumes citados são relativos de propósito. Os números mudam a cada legislatura; os totais reais de cada execução aparecem no log. A documentação da camada refined fica em <code>02. refined/documentacao/</code>.</p>
+</div>
+
+<h2 id="s1"><span class="num">1</span>O que esta camada faz<span class="aud simple">geral</span></h2>
+<p>Deputados federais têm direito a uma verba de custeio do mandato, a cota parlamentar, usada para passagens, combustível, aluguel de escritório, telefone e divulgação. Cada gasto é comprovado por nota fiscal e a Câmara publica tudo.</p>
+<p>Os dados são públicos, mas inconvenientes de usar: é preciso consultar deputado por deputado, e as despesas vêm fatiadas em páginas.</p>
+<p>Esta camada automatiza a coleta e grava cinco tabelas com os dados <strong>crus</strong>: unidades federativas, teto da cota parlamentar por UF e mês, deputados em exercício, despesas da legislatura corrente e ocupações profissionais declaradas.</p>
+<div class="box warn">
+  <div class="t">Uma origem diferente</div>
+  <p>Quatro dessas tabelas vêm da API da Câmara, exatamente como ela devolveu. A quinta, o teto da cota, não: a Câmara não publica esse valor no Dados Abertos, então a origem é uma planilha mantida à parte. Mesmo assim o princípio se mantém — a tabela guarda o dado como veio da origem, sem tratamento.</p>
+</div>
+<div class="box warn">
+  <div class="t">Uma tabela, duas APIs</div>
+  <p><code>raw.uf</code> vai além: a maior parte das colunas vem da Câmara, mas a URL da imagem da bandeira de cada estado vem de uma terceira origem, uma API pública diferente — a Câmara também não publica isso. É a única coluna do projeto inteiro que combina duas APIs distintas dentro da mesma tabela.</p>
+</div>
+<div class="box">
+  <p>Nada é limpo, corrigido ou padronizado aqui. Textos vêm em caixa alta, campos vêm nulos, linhas vazias são preservadas. O tratamento é papel da camada refined.</p>
+</div>
+
+<h2 id="s2"><span class="num">2</span>Como executar<span class="aud simple">geral</span></h2>
+
+<div class="box warn">
+  <div class="t">Antes da primeira vez</div>
+  <p>Rode <code>01. raw/ddl.sql</code> no banco. Ele derruba e recria as cinco tabelas.</p>
+</div>
+
+<p>Para rodar só esta camada, abra <strong><code>03.workflows/wkf_raw_camara.hwf</code></strong>. Para a carga completa (raw e refined), abra <strong><code>03.workflows/wkf_projeto_camara.hwf</code></strong>.</p>
+
+<table>
+  <thead><tr><th>Fluxo</th><th>Peso</th><th>Origem</th><th>Tabela</th></tr></thead>
+  <tbody>
+    <tr><td><code>get_uf</code></td><td>segundos</td><td>API</td><td><code>raw.uf</code></td></tr>
+    <tr><td><code>get_cotas</code></td><td>segundos</td><td>planilha</td><td><code>raw.cotas</code></td></tr>
+    <tr><td><code>get_deputados</code></td><td>segundos</td><td>API</td><td><code>raw.deputados</code></td></tr>
+    <tr><td><code>get_despesas</code></td><td>ordens de grandeza maior</td><td>API</td><td><code>raw.despesas</code></td></tr>
+    <tr><td><code>get_ocupacoes</code></td><td>minutos</td><td>API</td><td><code>raw.ocupacoes</code></td></tr>
+  </tbody>
+</table>
+<p>Praticamente todo o tempo de execução está no <code>get_despesas</code>, que faz uma chamada HTTP por página de despesa.</p>
+
+<h3>Sobre o get_cotas</h3>
+<div class="box">
+  <p>É o único fluxo que não acessa a internet. Lê a planilha <code>cota_parlamentar_ceap_2023_2026.xlsx</code>, cujo caminho fica na variável <code>P_ARQUIVO_COTAS</code>, definida em <code>project-config.json</code> — não escrito à mão no pipeline. Se o arquivo mudar de lugar, troca-se a variável nesse arquivo, e não dentro do <code>.hpl</code>.</p>
+  <p>Se o passo falhar com erro de arquivo não encontrado, é isso: o caminho configurado não existe naquela máquina.</p>
+</div>
+
+<h3>Sobre a bandeira em get_uf</h3>
+<div class="box">
+  <p>O endereço da API de bandeiras fica na variável <code>P_URL_BANDEIRAS_ESTADOS</code>, também em <code>project-config.json</code>, mesmo padrão do endereço da Câmara. É uma origem externa nova: se um dia trocar de provedor, ou a Codante mudar o domínio, o ajuste é nessa variável, não dentro do <code>get_uf.hpl</code>.</p>
+</div>
+
+<h3>Acompanhando pelo log</h3>
+<p>O <code>get_despesas</code> escreve o próprio andamento. Três marcos:</p>
+<pre><code>Deputados a consultar        → assim que a consulta ao banco termina
+Paginas a baixar             → quando a coleta começa
+Paginas baixadas ate agora   → a cada N páginas durante a coleta</code></pre>
+<p>O intervalo é o parâmetro <code>P_INTERVALO_LOG_PAGINAS</code>, que vem com 250. Comparar "páginas baixadas até agora" com "páginas a baixar" dá a fração concluída.</p>
+<p>O <code>get_ocupacoes</code> escreve só o total de deputados a consultar. Como não há paginação, o número de chamadas é o próprio número de deputados, e o passo é curto o bastante para não precisar de acompanhamento contínuo.</p>
+<p>O <code>get_cotas</code> não escreve log de andamento: lê uma planilha inteira de uma vez, é questão de segundos.</p>
+
+<h3>Conferindo o resultado</h3>
+<pre><code>SELECT COUNT(*) FROM raw.uf;
+SELECT COUNT(*) FROM raw.cotas;
+SELECT COUNT(*) FROM raw.deputados;
+SELECT COUNT(*) FROM raw.despesas;
+SELECT COUNT(*) FROM raw.ocupacoes;
+
+-- despesas órfãs: deve voltar zero
+SELECT COUNT(*)
+FROM   raw.despesas d
+LEFT   JOIN raw.deputados p ON p.id_deputado = d.id_deputado
+WHERE  p.id_deputado IS NULL;
+
+-- ocupações órfãs: deve voltar zero
+SELECT COUNT(*)
+FROM   raw.ocupacoes o
+LEFT   JOIN raw.deputados p ON p.id_deputado = o.id_deputado
+WHERE  p.id_deputado IS NULL;
+
+-- cotas com UF que não existe em raw.uf: deve voltar zero
+SELECT COUNT(*)
+FROM   raw.cotas c
+LEFT   JOIN raw.uf u ON u.sg_uf = c.sg_uf
+WHERE  u.sg_uf IS NULL;
+
+-- deputados sem ocupação registrada: informativo, não é erro
+SELECT COUNT(*)
+FROM   raw.ocupacoes
+WHERE  ds_titulo IS NULL AND nm_entidade IS NULL;
+
+-- UF sem bandeira encontrada na segunda origem: informativo, não deveria acontecer
+SELECT cd_uf, sg_uf, nm_uf
+FROM   raw.uf
+WHERE  ds_url_bandeira IS NULL OR ds_url_bandeira = '';</code></pre>
+
+<h2 id="s3"><span class="num">3</span>Visão geral<span class="aud simple">geral</span></h2>
+<pre class="diagram"><code>Start → get_uf → get_cotas → get_deputados → get_despesas → get_ocupacoes → Success
+          ↓          ↓             ↓               ↓               ↓
+        raw.uf   raw.cotas   raw.deputados   raw.despesas   raw.ocupacoes</code></pre>
+<p>Cada seta significa <strong>"só continue se o passo anterior deu certo"</strong>. Se algo falhar no meio, o workflow para e não executa o resto — é proposital: melhor parar com a carga incompleta do que seguir gravando dados inconsistentes.</p>
+
+<h3>Por que essa ordem</h3>
+<p><code>get_despesas</code> e <code>get_ocupacoes</code> precisam saber <strong>quem</strong> são os deputados antes de consultá-los. Ambos leem essa lista da tabela que <code>get_deputados</code> acabou de gravar.</p>
+<p><code>get_ocupacoes</code> depende do <code>get_deputados</code>, não do <code>get_despesas</code>. Está por último apenas para não competir por conexão com a coleta pesada.</p>
+<p><code>get_uf</code> e <code>get_cotas</code> não dependem de ninguém e ninguém depende deles. Estão no início por serem baratos e por serem, os dois, tabelas de apoio — referência, não coleta de evento.</p>
+
+<h2 id="s4"><span class="num">4</span><code>get_uf</code><span class="aud simple">geral</span></h2>
+<p class="lead">Fluxo de referência do projeto — com uma particularidade que os outros três não têm: duas origens diferentes se juntam num só fluxo.</p>
+<p><code>get_deputados</code>, <code>get_despesas</code> e <code>get_ocupacoes</code> seguem a estrutura simples das caixas 1 a 4 abaixo. O <code>get_uf</code> acrescenta uma segunda fila, que roda em paralelo, e um ponto de junção.</p>
+
+<h3>A fila principal, da Câmara</h3>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Montar o endereço</td><td>Monta a URL a partir da configuração do projeto</td></tr>
+    <tr><td>2</td><td>Chamar a API</td><td>Requisição HTTP; a resposta vai para o campo <code>result</code></td></tr>
+    <tr><td>3</td><td>Abrir a resposta</td><td>Isola o nó <code>dados</code></td></tr>
+    <tr><td>4</td><td>Separar um estado por linha</td><td>Quebra a lista em linhas: código, sigla, nome, descrição</td></tr>
+  </tbody>
+</table>
+<p>São duas caixas para ler a resposta (3 e 4) porque a API devolve tudo num pacote só: a 3 abre o pacote e isola a lista, a 4 quebra a lista em linhas.</p>
+
+<h3>A fila da bandeira, de uma segunda API</h3>
+<p>A Câmara não expõe imagem de bandeira em nenhum lugar do Dados Abertos. A origem é outra API pública, a <a href="https://docs.apis.codante.io/bandeiras-dos-estados">Bandeiras dos Estados Brasileiros da Codante</a>, sem autenticação, com imagens de <a href="https://github.com/pierrelapalu/icones-bandeiras-br-uf">Pierre Lapalu</a>.</p>
+<table>
+  <thead><tr><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>Montar o endereço das bandeiras</td><td>Monta a URL a partir da configuração do projeto</td></tr>
+    <tr><td>Chamar a API de bandeiras</td><td>Uma chamada só traz as 27 unidades federativas</td></tr>
+    <tr><td>Separar as bandeiras</td><td>Quebra a lista em uma linha por estado: sigla (<code>uf</code>) e link da bandeira (<code>flag_url</code>)</td></tr>
+  </tbody>
+</table>
+<div class="box">
+  <p>Só uma caixa para ler a resposta, e não duas como na fila da Câmara: essa API devolve a lista diretamente, sem um nó como "dados" envolvendo tudo. Não há o que isolar antes de quebrar em linhas.</p>
+</div>
+<p>A API também devolve versões arredondada, quadrada e circular da bandeira; nenhuma delas é usada aqui — só a original (<code>flag_url</code>).</p>
+
+<h3>A junção e o resto do fluxo</h3>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>5</td><td>Buscar a bandeira do estado</td><td>Junta as duas filas pela sigla</td></tr>
+    <tr><td>6</td><td>Renomear as colunas</td><td>Aplica os nomes do banco</td></tr>
+    <tr><td>7</td><td>Gravar em raw.uf</td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+<p>A caixa 5 é um <code>Stream lookup</code>: para cada linha da fila principal, procura na fila de bandeiras a linha cuja sigla bate, e traz o link. Estado sem bandeira encontrada não derruba o fluxo — fica com o valor em branco. Na prática isso não deveria acontecer, já que as duas origens cobrem as mesmas 27 unidades federativas, mas o fluxo não quebra se algum dia cobrir.</p>
+<p>O nome do estado vem em caixa alta (<code>SÃO PAULO</code>) e é gravado assim, junto com o link da bandeira, sem tratamento nenhum. Quem padroniza as iniciais e remove o acento é a camada refined.</p>
+
+<h2 id="s5"><span class="num">5</span><code>get_cotas</code><span class="aud simple">geral</span></h2>
+<p class="lead">O único fluxo da camada que não chama a API.</p>
+<p>O teto da cota parlamentar por UF não está no Dados Abertos, então a origem é uma planilha mantida à parte, com uma linha por UF e mês de competência. Sem paginação, sem chamada HTTP — é o fluxo mais curto do projeto.</p>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler a planilha de cotas</td><td>Lê a aba "Cota Parlamentar CEAP" do arquivo apontado por <code>P_ARQUIVO_COTAS</code></td></tr>
+    <tr><td>2</td><td>Selecionar as colunas</td><td>Fixa as três colunas e descarta o que estiver fora delas</td></tr>
+    <tr><td>3</td><td>Gravar em raw.cotas</td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+
+<h3>O que a planilha traz</h3>
+<table>
+  <thead><tr><th>Coluna da planilha</th><th>Vira na tabela</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td>Mês de competência</td><td><code>dt_competencia</code></td><td>Texto <code>"mm/aaaa"</code>, gravado como veio</td></tr>
+    <tr><td>Sigla do estado</td><td><code>sg_uf</code></td><td></td></tr>
+    <tr><td>Valor de teto</td><td><code>vl_cota</code></td><td></td></tr>
+  </tbody>
+</table>
+<div class="box">
+  <p><code>dt_competencia</code> fica como <strong>texto</strong> aqui de propósito, e não como data: a planilha não traz um dia, só mês e ano, e a raw não inventa dado que a origem não tem. A conversão para data — assumindo o primeiro dia do mês — é feita na camada refined, não aqui.</p>
+</div>
+
+<h3>Por que o teto muda com o tempo</h3>
+<p>O valor de cota por UF é definido por Ato da Mesa da Câmara e pode ser reajustado. Por isso a granularidade é UF <strong>e</strong> mês, não só UF: o mesmo estado pode ter tetos diferentes em meses diferentes.</p>
+
+<h2 id="s6"><span class="num">6</span><code>get_deputados</code><span class="aud simple">geral</span></h2>
+<p>Mesma estrutura do <code>get_uf</code>. Traz código, nome, partido, estado, legislatura, foto e e-mail.</p>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Montar o endereço</td><td>Monta a URL</td></tr>
+    <tr><td>2</td><td>Chamar a API</td><td>Uma chamada traz todos os deputados</td></tr>
+    <tr><td>3</td><td>Abrir a resposta</td><td>Isola o nó <code>dados</code></td></tr>
+    <tr><td>4</td><td>Separar um deputado por linha</td><td>Quebra a lista em linhas</td></tr>
+    <tr><td>5</td><td>Renomear as colunas</td><td>Renomeia e converte <code>id_legislatura</code> para inteiro</td></tr>
+    <tr><td>6</td><td>Gravar em raw.deputados</td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+<p><strong>Legislatura</strong> é o período de mandato. <code>get_despesas</code> e <code>get_ocupacoes</code> usam o maior valor dessa coluna para filtrar a legislatura corrente.</p>
+<div class="box">
+  <p>A conversão para inteiro na caixa 5 não é cosmética: <code>MAX</code> sobre texto ordenaria <code>"9"</code> acima de <code>"57"</code>.</p>
+</div>
+
+<h2 id="s7"><span class="num">7</span><code>get_despesas</code><span class="aud simple">geral</span></h2>
+
+<h3>O problema</h3>
+<p>A API entrega as despesas em páginas de tamanho limitado e <strong>não informa quantas páginas existem</strong>. O único jeito de descobrir é pedir a primeira e ler o rodapé da resposta, onde vem o endereço da <em>última</em> página.</p>
+
+<h3>A solução</h3>
+<p><strong>Contar (caixas 1 a 6).</strong> Uma chamada por deputado, só para ler o rodapé. Os dados que vêm nessa chamada são descartados.</p>
+<p><strong>Coletar (caixas 7 a 13).</strong> Sabendo o total, a linha de cada deputado é duplicada uma vez por página. Cada linha vira uma tarefa independente que busca a sua própria página.</p>
+<p>Daí as duas chamadas HTTP do fluxo, nas caixas 4 e 9.</p>
+
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler os deputados</td><td>Lê do banco quem consultar e a legislatura</td></tr>
+    <tr><td>2</td><td>Pegar endereço e tamanho de página</td><td>Anexa configurações a cada linha</td></tr>
+    <tr><td>3</td><td>Montar endereço de teste</td><td>URL da página 1 de cada deputado</td></tr>
+    <tr><td>4</td><td>Perguntar quantas páginas existem</td><td>Sonda: uma chamada por deputado</td></tr>
+    <tr><td>5</td><td>Achar o link da última página</td><td>Procura o atalho <code>last</code> no rodapé</td></tr>
+    <tr><td>6</td><td>Contar as páginas</td><td>Recorta o número do endereço</td></tr>
+    <tr><td>7</td><td>Criar uma linha por página</td><td>Duplica a linha, uma por página</td></tr>
+    <tr><td>8</td><td>Montar o endereço de cada página</td><td>URL definitiva de cada página</td></tr>
+    <tr><td>9</td><td>Baixar as despesas</td><td>Coleta real, 4 cópias em paralelo</td></tr>
+    <tr><td>10</td><td>Abrir a resposta</td><td>Isola <code>dados</code> e numera as páginas lidas</td></tr>
+    <tr><td>11</td><td>Separar uma despesa por linha</td><td>Quebra em linhas e tipa as colunas</td></tr>
+    <tr><td>12</td><td>Renomear as colunas</td><td>Aplica nomes do banco, descarta apoio</td></tr>
+    <tr><td>13</td><td>Gravar em raw.despesas</td><td>Truncate e insert em lotes</td></tr>
+  </tbody>
+</table>
+<p>Fora da fila principal ficam cinco caixas que só escrevem no log: <code>Contar deputados</code>, <code>Log: total de deputados</code>, <code>Contar páginas</code>, <code>Log: total de páginas</code> e, no meio da coleta, <code>Marcar o intervalo de log</code> → <code>Separar os marcos</code> → <code>Log: páginas baixadas</code>.</p>
+
+<h2 id="s8"><span class="num">8</span><code>get_ocupacoes</code><span class="aud simple">geral</span></h2>
+<p>Busca o histórico profissional declarado por cada deputado: cargo, entidade, estado e país da entidade, ano de início e ano de fim.</p>
+<p>Ao contrário do <code>get_despesas</code>, <strong>este endpoint não tem paginação</strong>. Uma chamada por deputado traz o histórico inteiro, então o fluxo é direto.</p>
+<table>
+  <thead><tr><th style="width:38px">#</th><th>Caixa</th><th>O que faz</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Ler os deputados</td><td>Lê do banco quem consultar</td></tr>
+    <tr><td>2</td><td>Pegar o endereço base</td><td>Anexa a configuração a cada linha</td></tr>
+    <tr><td>3</td><td>Montar o endereço</td><td>URL de ocupações de cada deputado</td></tr>
+    <tr><td>4</td><td>Buscar as ocupações</td><td>Uma chamada por deputado, 4 cópias em paralelo</td></tr>
+    <tr><td>5</td><td>Abrir a resposta</td><td>Isola o nó <code>dados</code></td></tr>
+    <tr><td>6</td><td>Separar uma ocupação por linha</td><td>Quebra a lista em linhas</td></tr>
+    <tr><td>7</td><td>Renomear as colunas</td><td>Aplica os nomes do banco</td></tr>
+    <tr><td>8</td><td>Gravar em raw.ocupacoes</td><td>Truncate e insert</td></tr>
+  </tbody>
+</table>
+<p>Mais <code>Contar deputados</code> → <code>Log: total de deputados</code>, fora da fila principal.</p>
+
+<h3>A pegadinha das linhas vazias</h3>
+<div class="box warn">
+  <div class="t">Deputado sem ocupação não devolve lista vazia</div>
+  <p>Devolve uma linha com todos os campos nulos:</p>
+</div>
+<pre><code>{"dados":[{"titulo":null,"entidade":null,"entidadeUF":null,
+           "entidadePais":null,"anoInicio":null,"anoFim":null}]}</code></pre>
+<p>Essas linhas são gravadas aqui <strong>de propósito</strong>, por fidelidade à origem: elas registram que a API foi consultada e não tinha nada a informar. Quem descarta é a camada refined.</p>
+<p>Se você consultar <code>raw.ocupacoes</code> diretamente, filtre:</p>
+<pre><code>WHERE ds_titulo IS NOT NULL OR nm_entidade IS NOT NULL</code></pre>
+
+<h2 id="s9"><span class="num">9</span>Detalhes técnicos<span class="aud tech">técnico</span></h2>
+
+<h3>9.1 Paginação: probe + fan-out</h3>
+<p>A API de despesas não retorna contagem no corpo. O bloco <code>links</code> traz um item com <code>rel="last"</code> cujo <code>href</code> contém o número da última página:</p>
+<pre><code>"links": [
+  { "rel": "self",  "href": "...&amp;pagina=1&amp;itens=100" },
+  { "rel": "next",  "href": "...&amp;pagina=2&amp;itens=100" },
+  { "rel": "first", "href": "...&amp;pagina=1&amp;itens=100" },
+  { "rel": "last",  "href": "...&amp;pagina=7&amp;itens=100" }
+]</code></pre>
+<ol>
+  <li><strong>Probe</strong> (caixa 4) — um <code>GET</code> por deputado com <code>pagina=1</code>.</li>
+  <li><strong>Extração</strong> (caixa 5) — JsonInput com JSONPath <code>$.links[?(@.rel=='last')].href</code>.</li>
+  <li><strong>Contagem</strong> (caixa 6) — Janino com regex sobre o href, menos um.</li>
+  <li><strong>Fan-out</strong> (caixa 7) — <code>Clone row</code> com número de clones vindo de campo.</li>
+  <li><strong>Coleta</strong> (caixas 8–9) — um <code>GET</code> por linha resultante.</li>
+</ol>
+<div class="box">
+  <p>O padrão existe porque não há laço dentro de um pipeline do Hop. A repetição precisa ser materializada como linhas, o que tem a vantagem de cada linha virar uma tarefa paralelizável.</p>
+  <p>O <em>menos um</em> da caixa 6 é porque <code>Clone row</code> mantém a linha original e cria N cópias adicionais. <code>get_ocupacoes</code> e <code>get_cotas</code> não precisam de nada disso: o primeiro porque o endpoint devolve tudo de uma vez, o segundo porque nem é uma chamada HTTP.</p>
+</div>
+
+<h3>9.2 Armadilhas</h3>
+
+<div class="box danger">
+  <div class="t">A ordem dos itens em links muda</div>
+  <p>Na primeira página é <code>[self, next, first, last]</code>; na última, <code>next</code> some e surge <code>previous</code>. Por isso o JSONPath filtra por <code>rel</code> e nunca por índice. Trocar por <code>$.links[3].href</code> não gera erro: apenas passa a contar páginas erradas, e despesas somem em silêncio.</p>
+</div>
+
+<div class="box danger">
+  <div class="t">defaultPathLeafToNull precisa ficar Y</div>
+  <p>Vale nas caixas que quebram listas em linhas, tanto em despesas quanto em ocupações. Vários campos vêm nulos com frequência (URL de nota, ano de fim de vínculo ativo). Com a flag desligada, o JsonInput não emite placeholder para o ausente: os arrays paralelos encurtam e ficam desalinhados entre si, colando o valor de uma linha em outra. Não dá erro, produz dado errado.</p>
+</div>
+
+<div class="box warn">
+  <div class="t">Particularidades dos dados</div>
+  <p><code>cd_documento</code> não é único e nem sempre é numérico: despesas SIGEPA repetem o mesmo código em linhas de valores diferentes, e algumas vêm como GUID.</p>
+  <p>Valores negativos são legítimos (estornos) — não filtre por <code>&gt; 0</code>. E <code>numRessarcimento</code> quase sempre vem vazio: só é preenchido quando houve devolução.</p>
+</div>
+
+<div class="box danger">
+  <div class="t">idLegislatura é obrigatório em despesas</div>
+  <p>Sem ele, ou com apenas <code>ano</code>, o endpoint devolve <code>{"dados": []}</code> sem erro.</p>
+</div>
+
+<div class="box warn">
+  <div class="t">get_cotas depende de um arquivo local</div>
+  <p>Ao contrário dos outros quatro fluxos, ele não roda em qualquer máquina sem ajuste: o caminho em <code>P_ARQUIVO_COTAS</code> precisa apontar para um arquivo que existe ali.</p>
+</div>
+
+<h3>9.3 Por que a legislatura sai de subquery</h3>
+<p>As caixas de leitura de <code>get_despesas</code> e <code>get_ocupacoes</code> usam:</p>
+<pre><code>WHERE id_legislatura = (SELECT MAX(id_legislatura) FROM raw.deputados)</code></pre>
+<p>Uma versão anterior recebia esse valor de uma variável de escopo JVM definida pelo <code>get_deputados</code>. Dois problemas: o pipeline não rodava isolado, e a GUI do Hop dava erro ao desenhar o diagrama — ela percorre a cadeia para trás e pede ao Postgres os campos da query, e como a variável não existe no espaço da GUI, o literal <code>${...}</code> ia para o banco, gerando <code>syntax error at or near "$"</code>.</p>
+<p>Com a subquery o resultado é idêntico. A dependência entre os pipelines passou a ser de dados, não de variável.</p>
+
+<h3>9.4 Como o log de andamento funciona</h3>
+<p>No <code>get_despesas</code>, a caixa 10 é um JsonInput com <code>rownum</code> ligado, gravando em <code>nr_pagina_lida</code>. Como ela emite uma linha por página baixada, esse campo é um contador global de páginas.</p>
+<ul>
+  <li><code>Marcar o intervalo de log</code> (Janino) calcula <code>nr_pagina_lida % V_INTERVALO_LOG</code>.</li>
+  <li><code>Separar os marcos</code> (FilterRows) manda resto zero para o <code>Write to log</code> e o resto direto para a caixa 11.</li>
+  <li><code>Log: páginas baixadas</code> (WriteToLog) escreve e devolve a linha para a caixa 11.</li>
+</ul>
+<p>Nada é descartado: os dois caminhos reconvergem. Os totais no início vêm de ramos laterais com <code>MemoryGroupBy</code> contando linhas, o que exige <code>distribute=N</code> (modo Copiar) nas caixas que alimentam esses ramos. O <code>get_ocupacoes</code> usa a mesma técnica, só que apenas para o total inicial.</p>
+
+<h3>9.5 Configurações que importam</h3>
+<table>
+  <thead><tr><th>Onde</th><th>Configuração</th><th>Valor</th><th>Por quê</th></tr></thead>
+  <tbody>
+    <tr><td><code>get_despesas</code> caixa 4</td><td>Cópias</td><td>2</td><td>Paraleliza as sondas</td></tr>
+    <tr><td><code>get_despesas</code> caixa 9</td><td>Cópias</td><td>4</td><td>Paraleliza a coleta. Não passe de 8 ou a API devolve 429</td></tr>
+    <tr><td><code>get_ocupacoes</code> caixa 4</td><td>Cópias</td><td>4</td><td>Mesmo limite</td></tr>
+    <tr><td>TableOutput (todos)</td><td>Cópias</td><td>1</td><td>Com <code>truncate=Y</code>, várias cópias truncariam a tabela cada uma por conta</td></tr>
+    <tr><td>TableOutput (todos)</td><td>Commit</td><td>1000</td><td>Tamanho do lote de insert</td></tr>
+    <tr><td>REST (<code>get_uf</code>, <code>get_despesas</code>, <code>get_ocupacoes</code>)</td><td>applicationType</td><td>JSON</td><td><code>TEXT PLAIN</code> pode corromper acentuação</td></tr>
+    <tr><td>REST (<code>get_uf</code>, <code>get_despesas</code>, <code>get_ocupacoes</code>)</td><td>readTimeout</td><td>30000 ms</td><td>O padrão de 10s é curto para páginas cheias</td></tr>
+  </tbody>
+</table>
+
+<h3>9.6 Ajuste de performance</h3>
+<ol>
+  <li>Aumentar o commit do TableOutput de despesas.</li>
+  <li>Dar 2 cópias à caixa que quebra o JSON em linhas, já que o parse é CPU-bound.</li>
+  <li>Só então mexer nas cópias do REST, sem passar de 8.</li>
+</ol>
+<div class="box">
+  <p>O <code>get_cotas</code> não entra nesse ajuste: lê um arquivo local pequeno, não há rede nem paginação a otimizar.</p>
+</div>
+
+<h3>9.7 Stream lookup: juntando duas origens em get_uf</h3>
+<p>É a única caixa do projeto do tipo <code>Stream lookup</code>, e o único ponto onde duas chamadas de API completamente independentes se encontram no mesmo pipeline.</p>
+<div class="box">
+  <div class="t">Por que duas filas, e não uma chamada dentro da outra</div>
+  <p>As despesas e ocupações usam o padrão "uma chamada por deputado" porque a API da Câmara não tem outro jeito. Aqui não é o caso: a API de bandeiras devolve as 27 UFs numa chamada só, igual à API de referências de estado. Encadear (chamar a bandeira depois de cada estado, um por um) seria 27 chamadas onde uma basta. Buscar as duas listas em paralelo e juntar depois é mais simples e mais barato.</p>
+</div>
+<p><strong>Como a junção funciona.</strong> A caixa <code>5. Buscar a bandeira do estado</code> recebe duas entradas: a fila principal (caixa 4, à esquerda no diagrama) e a fila de bandeiras (a fila de consulta, à direita). O campo <code>from</code> do <code>Stream lookup</code> aponta para o nome da caixa que é a fila de consulta — aqui, <code>Separar as bandeiras</code>. Sem isso, o Hop não sabe qual das duas entradas é a principal e qual é a tabela de consulta.</p>
+<p><strong>A chave de junção não precisa de tratamento.</strong> <code>sigla</code> (fila da Câmara) e <code>uf</code> (fila de bandeiras) já vêm no mesmo formato — sigla de duas letras, maiúscula — então a comparação funciona direto, sem <code>TRIM</code> nem ajuste de caixa.</p>
+<div class="box warn">
+  <div class="t">Estado sem bandeira não é erro</div>
+  <p>O <code>Stream lookup</code> tem uma coluna de valor padrão para quando a chave não é encontrada na fila de consulta; aqui ela fica vazia. Se um dia a API de bandeiras parar de cobrir alguma UF, o <code>get_uf</code> continua rodando — só aquela linha fica sem <code>ds_url_bandeira</code>.</p>
+</div>
+
+<h2 id="s10"><span class="num">10</span>Tabelas<span class="aud tech">técnico</span></h2>
+<p>Todas no schema <code>raw</code>, com dados crus, sem tratamento. Todas em carga full: truncate e regrava a cada execução.</p>
+<p>O DDL fica em <code>01. raw/ddl.sql</code>. Os tipos espelham o que cada pipeline entrega no TableOutput.</p>
+<div class="box">
+  <p>Não há chave estrangeira entre as tabelas. Os pipelines gravam com truncate, e o Postgres recusa <code>TRUNCATE</code> numa tabela referenciada por FK, inclusive com a filha vazia. As ligações são lógicas; as consultas de verificação estão no fim do <code>ddl.sql</code>.</p>
+</div>
+
+<h3><code>raw.uf</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>cd_uf</code></td><td>text</td><td>PK. Código da Câmara, não do IBGE</td></tr>
+    <tr><td><code>sg_uf</code></td><td>text</td><td>Unique</td></tr>
+    <tr><td><code>nm_uf</code></td><td>text</td><td>Caixa alta, como a API entrega</td></tr>
+    <tr><td><code>ds_uf</code></td><td>text</td><td>A API devolve sempre vazio</td></tr>
+    <tr><td><code>ds_url_bandeira</code></td><td>text</td><td>URL da bandeira (SVG). <strong>Vem de outra API, não da Câmara.</strong> Vazio se a sigla não for encontrada nela</td></tr>
+  </tbody>
+</table>
+
+<h3><code>raw.cotas</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_cota</code></td><td>bigserial</td><td>PK artificial. Renumera a cada carga</td></tr>
+    <tr><td><code>dt_competencia</code></td><td>text</td><td><code>"mm/aaaa"</code>, exatamente como vem na planilha</td></tr>
+    <tr><td><code>sg_uf</code></td><td>text</td><td>Liga com <code>raw.uf.sg_uf</code></td></tr>
+    <tr><td><code>vl_cota</code></td><td>numeric(14,2)</td><td>Teto vigente naquele mês para a UF</td></tr>
+    <tr><td><code>dt_carga</code></td><td>timestamptz</td><td>Default do banco</td></tr>
+  </tbody>
+</table>
+<div class="box">
+  <p>Único par (<code>sg_uf</code>, <code>dt_competencia</code>) por UF e mês — reforçado por um índice único, que é a forma de o banco acusar linha duplicada vinda da planilha.</p>
+</div>
+
+<h3><code>raw.deputados</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_deputado</code></td><td>text</td><td>PK. Texto porque é concatenado em URLs</td></tr>
+    <tr><td><code>uri_deputado</code></td><td>text</td><td></td></tr>
+    <tr><td><code>nm_deputado</code></td><td>text</td><td>Nome parlamentar</td></tr>
+    <tr><td><code>sg_partido</code></td><td>text</td><td></td></tr>
+    <tr><td><code>uri_partido</code></td><td>text</td><td></td></tr>
+    <tr><td><code>sg_uf</code></td><td>text</td><td>Liga com <code>raw.uf.sg_uf</code></td></tr>
+    <tr><td><code>id_legislatura</code></td><td>integer</td><td>Base do filtro de legislatura corrente</td></tr>
+    <tr><td><code>ds_url_foto</code></td><td>text</td><td></td></tr>
+    <tr><td><code>ds_email</code></td><td>text</td><td></td></tr>
+  </tbody>
+</table>
+
+<h3><code>raw.despesas</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_despesa</code></td><td>bigserial</td><td>PK artificial. Renumera a cada carga</td></tr>
+    <tr><td><code>id_deputado</code></td><td>text</td><td>Não vem da API; propagado pelo pipeline</td></tr>
+    <tr><td><code>nr_ano</code> / <code>nr_mes</code></td><td>integer</td><td>Competência, não a data do documento</td></tr>
+    <tr><td><code>ds_tipo_despesa</code></td><td>text</td><td>Caixa alta, como a API entrega</td></tr>
+    <tr><td><code>cd_documento</code></td><td>text</td><td>Não é único; pode ser número ou GUID</td></tr>
+    <tr><td><code>ds_tipo_documento</code></td><td>text</td><td></td></tr>
+    <tr><td><code>cd_tipo_documento</code></td><td>integer</td><td></td></tr>
+    <tr><td><code>dt_documento</code></td><td>timestamp</td><td></td></tr>
+    <tr><td><code>nr_documento</code></td><td>text</td><td></td></tr>
+    <tr><td><code>vl_documento</code></td><td>numeric(14,2)</td><td>Pode ser negativo</td></tr>
+    <tr><td><code>ds_url_documento</code></td><td>text</td><td>Nulo em boa parte das linhas</td></tr>
+    <tr><td><code>nm_fornecedor</code></td><td>text</td><td></td></tr>
+    <tr><td><code>nr_cnpj_cpf_fornecedor</code></td><td>text</td><td>Só dígitos, sem máscara</td></tr>
+    <tr><td><code>vl_liquido</code></td><td>numeric(14,2)</td><td>Já descontada a glosa</td></tr>
+    <tr><td><code>vl_glosa</code></td><td>numeric(14,2)</td><td></td></tr>
+    <tr><td><code>nr_ressarcimento</code></td><td>text</td><td>Vazio na maioria</td></tr>
+    <tr><td><code>cd_lote</code></td><td>bigint</td><td></td></tr>
+    <tr><td><code>nr_parcela</code></td><td>integer</td><td></td></tr>
+    <tr><td><code>dt_carga</code></td><td>timestamptz</td><td>Default do banco</td></tr>
+  </tbody>
+</table>
+
+<h3><code>raw.ocupacoes</code></h3>
+<table>
+  <thead><tr><th>Coluna</th><th>Tipo</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><td><code>id_ocupacao</code></td><td>bigserial</td><td>PK artificial. Renumera a cada carga</td></tr>
+    <tr><td><code>id_deputado</code></td><td>text</td><td>Não vem da API; propagado pelo pipeline</td></tr>
+    <tr><td><code>ds_titulo</code></td><td>text</td><td>Cargo ou função. <strong>Nulo nas linhas vazias</strong></td></tr>
+    <tr><td><code>nm_entidade</code></td><td>text</td><td><strong>Nulo nas linhas vazias</strong></td></tr>
+    <tr><td><code>sg_uf_entidade</code></td><td>text</td><td>Estado da entidade, não o do mandato</td></tr>
+    <tr><td><code>nm_pais_entidade</code></td><td>text</td><td></td></tr>
+    <tr><td><code>nr_ano_inicio</code></td><td>integer</td><td></td></tr>
+    <tr><td><code>nr_ano_fim</code></td><td>integer</td><td>Nulo costuma indicar vínculo ativo</td></tr>
+    <tr><td><code>dt_carga</code></td><td>timestamptz</td><td>Default do banco</td></tr>
+  </tbody>
+</table>
+
+<h3>Sobre o <code>dt_carga</code></h3>
+<div class="box">
+  <p>A coluna é <code>timestamptz</code>, não <code>timestamp</code>, e isso importa. O servidor do Supabase roda em UTC: com <code>timestamp</code> simples, <code>now()</code> gravaria a hora de Londres e a coluna não teria como registrar isso. Com <code>timestamptz</code> o instante fica absoluto e cada cliente — psql, DBeaver, Power BI — exibe no próprio fuso.</p>
+  <p>O valor é preenchido pelo default do banco, não pelo pipeline.</p>
+</div>
+
+<h2 id="s11"><span class="num">11</span>Erros comuns<span class="aud tech">técnico</span></h2>
+
+<h4><code>syntax error at or near "$"</code> ao clicar num step</h4>
+<p>Uma query com <code>${VARIAVEL}</code> sendo enviada literal ao banco pela GUI. Não afeta a execução, só o desenho da tela.</p>
+
+<h4><code>Error finding field [xxx] in incoming stream!</code></h4>
+<p>O step anterior não criou o campo. Em transforms Janino costuma ser XML mal formado: as tags são <code>field_name</code> e <code>formula_string</code> dentro de um elemento <code>&lt;formula&gt;</code>, sem envelope <code>&lt;fields&gt;</code>. O Hop ignora tag desconhecida em silêncio e carrega o step vazio.</p>
+
+<h4>Erros com logger <code>...Meta@hash</code></h4>
+<p>Não são erros de execução. Erro real aparece como <code>NomeDoStep.0 - ERROR:</code>.</p>
+
+<h4>HTTP 429 na coleta</h4>
+<p>Chamadas simultâneas demais. Reduza as cópias do REST.</p>
+
+<h4><code>raw.despesas</code> vazia sem erro</h4>
+<p>Ou <code>raw.deputados</code> está vazia, ou <code>idLegislatura</code> não está indo na URL.</p>
+
+<h4><code>raw.ocupacoes</code> com muitas linhas nulas</h4>
+<p>Não é erro. Ver seção 8.</p>
+
+<h4><code>get_cotas</code> falha com arquivo não encontrado</h4>
+<p>O caminho em <code>P_ARQUIVO_COTAS</code> (<code>project-config.json</code>) não existe naquela máquina. É o único fluxo com dependência de arquivo local, então é o único que quebra ao trocar de computador sem ajustar configuração.</p>
+
+<h4><code>raw.uf.ds_url_bandeira</code> sempre vazio</h4>
+<p>A API de bandeiras pode estar fora do ar, ou a variável <code>P_URL_BANDEIRAS_ESTADOS</code> pode estar apontando para o lugar errado. Não derruba o fluxo (ver seção 9.7), então passa despercebido se ninguém checar a coluna depois da carga — use a consulta de verificação da seção 2.</p>
+
+<h4>Aviso de entrada faltando na caixa 5 do get_uf</h4>
+<p>O <code>Stream lookup</code> precisa de duas entradas ligadas nele: a fila principal e a fila de bandeiras. Se um dos dois hops for apagado sem querer, a caixa reclama.</p>
+
+<h4><code>RuntimeException: Endless loop detected for substitution of variable</code> ao rodar um pipeline</h4>
+<p>Um parâmetro de pipeline com o mesmo nome de uma variável de projeto, e valor padrão apontando para si mesmo (<code>&lt;default_value&gt;${MESMO_NOME}&lt;/default_value&gt;</code>), faz o Hop entrar em loop tentando resolver a variável. Aconteceu duas vezes neste projeto: em <code>get_uf</code> com <code>P_URL_BANDEIRAS_ESTADOS</code>, e em <code>get_cotas</code> com <code>P_ARQUIVO_COTAS</code>. Nos dois casos a variável de projeto já é o valor completo (URL ou caminho de arquivo), sem nada para concatenar, então o parâmetro de pipeline era desnecessário — foi removido, e as caixas passaram a usar <code>${P_URL_BANDEIRAS_ESTADOS}</code> e <code>${P_ARQUIVO_COTAS}</code> direto, sem passar por parâmetro. Compare com a caixa 1 de <code>get_uf</code>, que combina a base do projeto com um sufixo através do parâmetro <code>P_URL_DADOS_ABERTOS_CAMARA</code> — nome diferente da variável de projeto que ele usa (<code>P_URL_BASE_DADOS_ABERTOS_CAMARA</code>), por isso não tem esse problema. Regra geral: um parâmetro de pipeline nunca deve ter o mesmo nome da variável de projeto no seu próprio valor padrão.</p>
+
+<h2 id="s12"><span class="num">12</span>Glossário<span class="aud simple">geral</span></h2>
+<table>
+  <thead><tr><th style="width:210px">Termo</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><strong>API</strong></td><td>Endereço que devolve dados em formato de máquina</td></tr>
+    <tr><td><strong>JSON</strong></td><td>Formato de texto para troca de dados entre sistemas</td></tr>
+    <tr><td><strong>Paginação</strong></td><td>Devolver resultados em pedaços</td></tr>
+    <tr><td><strong>Pipeline</strong> (<code>.hpl</code>)</td><td>Fluxo de transformação de dados</td></tr>
+    <tr><td><strong>Workflow</strong> (<code>.hwf</code>)</td><td>Orquestrador que chama pipelines em ordem</td></tr>
+    <tr><td><strong>Transform, step, "caixa"</strong></td><td>Cada quadradinho dentro de um pipeline</td></tr>
+    <tr><td><strong>Hop</strong></td><td>A seta que liga dois steps</td></tr>
+    <tr><td><strong>Schema <code>raw</code></strong></td><td>Camada de dados crus</td></tr>
+    <tr><td><strong>Truncate</strong></td><td>Esvaziar a tabela antes de gravar</td></tr>
+    <tr><td><strong>Carga full</strong></td><td>Recarregar tudo, em vez de só as novidades</td></tr>
+    <tr><td><strong>Legislatura</strong></td><td>Período de mandato</td></tr>
+    <tr><td><strong>Cota parlamentar</strong></td><td>Verba de custeio do mandato</td></tr>
+    <tr><td><strong>CEAP</strong></td><td>Cota para o Exercício da Atividade Parlamentar, nome oficial da cota</td></tr>
+    <tr><td><strong>Mês de competência</strong></td><td>Mês a que um valor se refere, podendo ser diferente do mês em que foi registrado</td></tr>
+    <tr><td><strong>Stream lookup</strong></td><td>Transform que junta duas filas de dados dentro do mesmo pipeline, buscando um valor de uma pela chave da outra</td></tr>
+    <tr><td><strong>Fila de consulta (info stream)</strong></td><td>Na junção de duas filas, a que fornece o valor buscado, e não a que dá o volume de linhas do resultado</td></tr>
+  </tbody>
+</table>
+
+<h2 id="s13"><span class="num">13</span>Arquivos</h2>
+<pre><code>01. Apache Hop - Projeto Câmara/
+├── 01. raw/
+│   ├── ddl.sql                cria as cinco tabelas da raw
+│   ├── get_uf.hpl
+│   ├── get_cotas.hpl
+│   ├── get_deputados.hpl
+│   ├── get_despesas.hpl
+│   ├── get_ocupacoes.hpl
+│   └── documentacao/
+│       ├── documentacao.md
+│       └── documentacao.html
+├── 02. refined/               modelo estrela (documentação própria)
+├── 03.workflows/
+│   ├── wkf_projeto_camara.hwf ← carga completa; execute por aqui
+│   ├── wkf_raw_camara.hwf
+│   └── wkf_refined_camara.hwf
+└── metadata/</code></pre>
+
+<footer>
+  <p>Fonte: API de Dados Abertos da Câmara dos Deputados — <a href="https://dadosabertos.camara.leg.br/swagger/api.html">dadosabertos.camara.leg.br</a>. Dados públicos, sem autenticação. A tabela <code>raw.cotas</code> é exceção: vem de planilha mantida à parte.</p>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

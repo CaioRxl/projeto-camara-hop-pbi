@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>get_uf</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description>Carrega as unidades federativas em raw.uf.</description>
+    <extended_description>Tabela de apoio: serve para traduzir sigla de estado em nome por extenso, e agora
+também para achar a imagem da bandeira de cada um.
+
+Duas origens diferentes se juntam aqui. A fila de cima (caixas 1 a 4) vem da
+API da Câmara: código, sigla, nome e descrição. A fila de baixo vem de uma
+segunda API, a de bandeiras: a Câmara não expõe imagem de bandeira em lugar
+nenhum do Dados Abertos. As duas filas se encontram na caixa 5, que busca a
+bandeira de cada estado pela sigla.
+
+Fora a junção, é o fluxo mais simples do projeto: monta o endereço, chama a
+API, abre a resposta, quebra em linhas, renomeia, grava. Os outros dois
+fluxos de coleta seguem essa mesma estrutura, só que sem a segunda origem.
+
+Carga full. A tabela é truncada antes de gravar.</extended_description>
+    <pipeline_version/>
+    <pipeline_type>Normal</pipeline_type>
+    <pipeline_status>0</pipeline_status>
+    <parameters>
+      <parameter>
+        <name>P_URL_DADOS_ABERTOS_CAMARA</name>
+        <default_value>${P_URL_BASE_DADOS_ABERTOS_CAMARA}/referencias/uf</default_value>
+        <description>Endereco completo da lista de estados. A primeira parte vem da configuracao do projeto.</description>
+      </parameter>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>-</created_user>
+    <created_date>2026/08/06 21:48:24.074</created_date>
+    <modified_user>-</modified_user>
+    <modified_date>2026/08/11 12:00:00.000</modified_date>
+  </info>
+  <notepads>
+  </notepads>
+  <order>
+    <hop>
+      <from>1. Montar o endereço</from>
+      <to>2. Chamar a API</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>2. Chamar a API</from>
+      <to>3. Abrir a resposta</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>3. Abrir a resposta</from>
+      <to>4. Separar um estado por linha</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Montar o endereço das bandeiras</from>
+      <to>Chamar a API de bandeiras</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Chamar a API de bandeiras</from>
+      <to>Separar as bandeiras</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>4. Separar um estado por linha</from>
+      <to>5. Buscar a bandeira do estado</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>Separar as bandeiras</from>
+      <to>5. Buscar a bandeira do estado</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>5. Buscar a bandeira do estado</from>
+      <to>6. Renomear as colunas</to>
+      <enabled>Y</enabled>
+    </hop>
+    <hop>
+      <from>6. Renomear as colunas</from>
+      <to>7. Gravar em raw.uf</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>1. Montar o endereço</name>
+    <type>GetVariable</type>
+    <description>Monta a URL a ser consultada.
+
+O endereço base fica em project-config.json, não escrito à mão aqui. Se a Câmara mudar o domínio, troca-se em um lugar só.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <length>-1</length>
+        <name>V_URL_BASE</name>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <type>String</type>
+        <variable>${P_URL_DADOS_ABERTOS_CAMARA}</variable>
+      </field>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>112</xloc>
+      <yloc>144</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>2. Chamar a API</name>
+    <type>Rest</type>
+    <description>Faz a requisição e guarda a resposta inteira no campo result.
+
+Equivale a abrir a URL no navegador: volta um texto em JSON, que é o formato padrão de troca de dados entre sistemas.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <applicationType>JSON</applicationType>
+    <connectionTimeout>15000</connectionTimeout>
+    <dynamicMethod>N</dynamicMethod>
+    <headers>
+</headers>
+    <ignoreSsl>N</ignoreSsl>
+    <matrixParameters>
+</matrixParameters>
+    <method>GET</method>
+    <parameters>
+</parameters>
+    <preemptive>N</preemptive>
+    <readTimeout>30000</readTimeout>
+    <result>
+      <name>result</name>
+    </result>
+    <trustStorePassword>Encrypted </trustStorePassword>
+    <urlField>V_URL_BASE</urlField>
+    <urlInField>Y</urlInField>
+    <attributes/>
+    <GUI>
+      <xloc>288</xloc>
+      <yloc>144</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>3. Abrir a resposta</name>
+    <type>JsonInput</type>
+    <description>Isola o nó "dados" da resposta.
+
+A API também devolve um bloco "links" com atalhos de paginação. Aqui não serve: a lista de estados cabe inteira numa resposta só.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>dados</name>
+        <path>$.dados</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>result</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>448</xloc>
+      <yloc>144</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>4. Separar um estado por linha</name>
+    <type>JsonInput</type>
+    <description>Quebra a lista em uma linha por estado.
+
+Entra uma linha com tudo agrupado, saem várias com código, sigla, nome e descrição. Daqui em diante os dados têm formato de tabela.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>cod</name>
+        <path>$.*.cod</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>sigla</name>
+        <path>$.*.sigla</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>nome</name>
+        <path>$.*.nome</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>descricao</name>
+        <path>$.*.descricao</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>dados</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>624</xloc>
+      <yloc>144</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>5. Buscar a bandeira do estado</name>
+    <type>StreamLookup</type>
+    <description>Junta as duas filas: para cada estado da Câmara (sigla), procura a linha correspondente na lista de bandeiras (uf) e traz o link da bandeira.
+
+Estado sem bandeira encontrada não derruba o fluxo: fica com o valor padrão (vazio), porque não há caixa de "default" preenchida. Na prática isso não deve acontecer — as duas origens cobrem as mesmas 27 unidades federativas — mas o fluxo não quebra se algum dia cobrir.
+
+Precisa de duas entradas: a fila principal (caixa 4, à esquerda) e a fila de bandeiras (à direita, que é a fonte de consulta). O campo "from" desta caixa aponta para "Separar as bandeiras", marcando qual das duas é a fila de consulta.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <from>Separar as bandeiras</from>
+    <input_sorted>N</input_sorted>
+    <preserve_memory>Y</preserve_memory>
+    <sorted_list>N</sorted_list>
+    <integer_pair>N</integer_pair>
+    <lookup>
+      <key>
+        <name>sigla</name>
+        <field>uf</field>
+      </key>
+      <value>
+        <name>flag_url</name>
+        <rename>ds_url_bandeira</rename>
+        <default/>
+        <type>String</type>
+      </value>
+    </lookup>
+    <attributes/>
+    <GUI>
+      <xloc>912</xloc>
+      <yloc>240</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>6. Renomear as colunas</name>
+    <type>SelectValues</type>
+    <description>Aplica os nomes usados no banco e descarta o que não vai ser gravado.
+
+Prefixos do projeto: cd_ código, sg_ sigla, nm_ nome, ds_ texto livre. ds_url_bandeira já sai da caixa 5 com o nome certo, então só precisa ser listada para não ser descartada.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <name>cod</name>
+        <rename>cd_uf</rename>
+      </field>
+      <field>
+        <name>sigla</name>
+        <rename>sg_uf</rename>
+      </field>
+      <field>
+        <name>nome</name>
+        <rename>nm_uf</rename>
+      </field>
+      <field>
+        <name>descricao</name>
+        <rename>ds_uf</rename>
+      </field>
+      <field>
+        <name>ds_url_bandeira</name>
+      </field>
+      <select_unspecified>N</select_unspecified>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>1120</xloc>
+      <yloc>240</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>7. Gravar em raw.uf</name>
+    <type>TableOutput</type>
+    <description>Grava em raw.uf. A tabela é truncada antes, então cada execução substitui o conteúdo.
+
+"raw" é a camada de dados crus, sem tratamento. Limpeza e cálculo ficam para as camadas seguintes. O link da bandeira também é gravado cru, exatamente como a API de bandeiras devolveu.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <commit>1000</commit>
+    <connection>supabase</connection>
+    <fields>
+      <field>
+        <column_name>cd_uf</column_name>
+        <stream_name>cd_uf</stream_name>
+      </field>
+      <field>
+        <column_name>sg_uf</column_name>
+        <stream_name>sg_uf</stream_name>
+      </field>
+      <field>
+        <column_name>nm_uf</column_name>
+        <stream_name>nm_uf</stream_name>
+      </field>
+      <field>
+        <column_name>ds_uf</column_name>
+        <stream_name>ds_uf</stream_name>
+      </field>
+      <field>
+        <column_name>ds_url_bandeira</column_name>
+        <stream_name>ds_url_bandeira</stream_name>
+      </field>
+    </fields>
+    <ignore_errors>N</ignore_errors>
+    <only_when_have_rows>N</only_when_have_rows>
+    <partitioning_daily>N</partitioning_daily>
+    <partitioning_enabled>N</partitioning_enabled>
+    <partitioning_monthly>Y</partitioning_monthly>
+    <return_keys>N</return_keys>
+    <schema>raw</schema>
+    <specify_fields>Y</specify_fields>
+    <table>uf</table>
+    <tablename_in_field>N</tablename_in_field>
+    <tablename_in_table>Y</tablename_in_table>
+    <truncate>Y</truncate>
+    <use_batch>Y</use_batch>
+    <attributes/>
+    <GUI>
+      <xloc>1296</xloc>
+      <yloc>240</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Chamar a API de bandeiras</name>
+    <type>Rest</type>
+    <description>Chama a API pública de bandeiras dos estados brasileiros (Codante, imagens de Pierre Lapalu). Não é da Câmara: é a única origem externa do projeto que não é o Dados Abertos.
+
+Uma chamada só traz as 27 unidades federativas, sem paginação nem parâmetro de UF — por isso é mais simples buscar a lista inteira aqui e casar com o estado certo depois (caixa 5) do que chamar uma vez por estado.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <applicationType>JSON</applicationType>
+    <connectionTimeout>15000</connectionTimeout>
+    <dynamicMethod>N</dynamicMethod>
+    <headers>
+</headers>
+    <ignoreSsl>N</ignoreSsl>
+    <matrixParameters>
+</matrixParameters>
+    <method>GET</method>
+    <parameters>
+</parameters>
+    <preemptive>N</preemptive>
+    <readTimeout>30000</readTimeout>
+    <result>
+      <name>result</name>
+    </result>
+    <trustStorePassword>Encrypted </trustStorePassword>
+    <urlField>V_URL_BANDEIRAS</urlField>
+    <urlInField>Y</urlInField>
+    <attributes/>
+    <GUI>
+      <xloc>336</xloc>
+      <yloc>320</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Montar o endereço das bandeiras</name>
+    <type>GetVariable</type>
+    <description>Monta a URL da API de bandeiras. Fila separada da fila principal: não depende de nada da Câmara, só é chamada em paralelo.
+
+O endereço fica em project-config.json, direto na variável de projeto ${P_URL_BANDEIRAS_ESTADOS} — sem parâmetro de pipeline no meio, porque aqui não há nada para concatenar (a variável já é a URL completa). É diferente da caixa 1, que combina a base do projeto com um sufixo através de um parâmetro (P_URL_DADOS_ABERTOS_CAMARA). Um parâmetro de pipeline com o mesmo nome da variável de projeto e valor padrão apontando para si mesmo causa "Endless loop detected" no Hop — foi o que aconteceu aqui antes desta correção.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <fields>
+      <field>
+        <length>-1</length>
+        <name>V_URL_BANDEIRAS</name>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <type>String</type>
+        <variable>${P_URL_BANDEIRAS_ESTADOS}</variable>
+      </field>
+    </fields>
+    <attributes/>
+    <GUI>
+      <xloc>112</xloc>
+      <yloc>320</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Separar as bandeiras</name>
+    <type>JsonInput</type>
+    <description>Quebra a lista de bandeiras em uma linha por estado.
+
+Só uma caixa aqui, e não duas como na fila de cima: a resposta da API de bandeiras já é a lista, sem um nó "dados" envolvendo tudo. Não há o que isolar antes de quebrar em linhas.
+
+Traz só sigla (uf) e o link da bandeira original (flag_url). A API também devolve versões arredondada, quadrada e circular; nenhuma delas é usada aqui.</description>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <include>N</include>
+    <include_field/>
+    <rownum>N</rownum>
+    <addresultfile>N</addresultfile>
+    <readurl>N</readurl>
+    <removeSourceField>Y</removeSourceField>
+    <IsIgnoreEmptyFile>N</IsIgnoreEmptyFile>
+    <doNotFailIfNoFile>Y</doNotFailIfNoFile>
+    <ignoreMissingPath>Y</ignoreMissingPath>
+    <defaultPathLeafToNull>Y</defaultPathLeafToNull>
+    <rownum_field/>
+    <file>
+      <name/>
+      <filemask/>
+      <exclude_filemask/>
+      <file_required>N</file_required>
+      <include_subfolders>N</include_subfolders>
+    </file>
+    <fields>
+      <field>
+        <name>uf</name>
+        <path>$.*.uf</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+      <field>
+        <name>flag_url</name>
+        <path>$.*.flag_url</path>
+        <type>String</type>
+        <format/>
+        <currency/>
+        <decimal/>
+        <group/>
+        <length>-1</length>
+        <precision>-1</precision>
+        <trim_type>none</trim_type>
+        <repeat>N</repeat>
+      </field>
+    </fields>
+    <limit>0</limit>
+    <IsInFields>Y</IsInFields>
+    <IsAFile>N</IsAFile>
+    <valueField>result</valueField>
+    <shortFileFieldName/>
+    <pathFieldName/>
+    <hiddenFieldName/>
+    <lastModificationTimeFieldName/>
+    <uriNameFieldName/>
+    <rootUriNameFieldName/>
+    <extensionFieldName/>
+    <sizeFieldName/>
+    <attributes/>
+    <GUI>
+      <xloc>560</xloc>
+      <yloc>320</yloc>
+    </GUI>
+  </transform>
+  <transform_error_handling>
+  </transform_error_handling>
+  <attributes/>
+</pipeline>
